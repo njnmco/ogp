@@ -1,0 +1,53 @@
+---
+title: "OGP 2020 Update"
+author: "Neal Fultz <neal@njnm.co>"
+date: "2/17/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## Guiding Principles
+
+From: https://www.lacountyarts.org/funding/organizational-grant-program/ogp-grantseekers/apply/ogp-grantseekers-calculator-explained
+
+```
+Working with a professional statistician, the following principles were used to guide the formula creation in 2013:
+
+The solution should eliminate any discontinuous penalties for growth
+The solution should continue to allow smaller organizations to request and receive a greater proportion of their overall budget than the larger organizations
+The solution should minimize the number of contracts whose maximum grant allocation shifts up or down by more than 25% of the 2013/2014 levels
+The solution should take particular care with the smaller contracts in the OGP I and OGP II categories, for whom small changes in grant allocations create significant difficulties
+The solution could be in the form of a calculator on the Arts and Culture website
+The solution need not take into account the current OGP categories
+```
+
+## Project Category
+
+  * _Sustainability_: Provides support for existing artistic and/or administrative projects that help to sustain the mission and goals of arts organizations.
+  * _Organizational Capacity_: Provides support for new projects that increase the organizational capacity and infrastructure of arts organizations.
+  * _Artistic Capacity_: Provides support for new projects that increase the artistic capacity of arts organizations.
+  * _Accessibility_: Provides support for new or existing projects that provide public access to arts activities and programs.
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
