@@ -35,12 +35,23 @@ local({
   nms <- setNames(nm=tbl[[1]][1,])
   nms["Grantee"] = "Organization" # To match allocations spreadsheet for merging
   for( i in seq_along(tbl)) {
-    tbl[[i]] <- tbl[[i]][-1,]
+    tbl[[i]] <- gsub("\r", " ", tbl[[i]][-1,])
   }
   tbl <- as.data.frame(do.call(rbind, tbl), stringsAsFactors = FALSE)
   colnames(tbl) <- nms
-  tbl$Organization <- gsub("\r", " ", tbl$Organization)
   tbl <- subset(tbl, select = c('Organization', 'City', 'Discipline'))
+
+  ### Standardize Disciplines
+  tbl$Multidisciplinary <- grepl("^Multidisciplinary", tbl$Discipline)
+  tbl$Arts_Education <- grepl("^Arts Education", tbl$Discipline)
+  tbl$Discipline <- sub("^Multidisciplinary -", "", tbl$Discipline)
+  tbl$Discipline <- sub("^Arts Education -", "", tbl$Discipline)
+  tbl$Discipline <- sub("(?<=Music)[^A-Z]+", " - ", tbl$Discipline, perl=TRUE)
+
+
+
+
+  tbl[1:3] <- lapply(tbl[1:3], trimws)
 
   ## Check for perfect match
   stopifnot(
