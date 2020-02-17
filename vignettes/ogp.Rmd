@@ -1,5 +1,5 @@
 ---
-title: "OGP 2020 Update"
+title: "OGP 2020 Analysis Draft"
 author: "Neal Fultz <neal@njnm.co>"
 date: "2/17/2020"
 output: html_document
@@ -7,7 +7,28 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(ogp)
+library(dplyr)
+
+allocations <- cbind(
+  allocations,
+  Current = Award(allocations$Budget_Size, OGP.2013_forward, allocations$ScorePercent)
+)
 ```
+
+DRAFT
+DRAFT
+DRAFT
+DRAFT
+DRAFT
+DRAFT
+DRAFT
+DRAFT
+
+## Executive Summary
+
+TODO
 
 
 ## Guiding Principles
@@ -15,15 +36,60 @@ knitr::opts_chunk$set(echo = TRUE)
 From: https://www.lacountyarts.org/funding/organizational-grant-program/ogp-grantseekers/apply/ogp-grantseekers-calculator-explained
 
 ```
-Working with a professional statistician, the following principles were used to guide the formula creation in 2013:
-
-The solution should eliminate any discontinuous penalties for growth
-The solution should continue to allow smaller organizations to request and receive a greater proportion of their overall budget than the larger organizations
-The solution should minimize the number of contracts whose maximum grant allocation shifts up or down by more than 25% of the 2013/2014 levels
-The solution should take particular care with the smaller contracts in the OGP I and OGP II categories, for whom small changes in grant allocations create significant difficulties
-The solution could be in the form of a calculator on the Arts and Culture website
-The solution need not take into account the current OGP categories
+> Working with a professional statistician, the following principles were used to guide the formula creation in 2013:
+> 
+> The solution should eliminate any discontinuous penalties for growth
+> The solution should continue to allow smaller organizations to request and receive a greater proportion of their overall budget than the larger organizations
+> The solution should minimize the number of contracts whose maximum grant allocation shifts up or down by more than 25% of the 2013/2014 levels
+> The solution should take particular care with the smaller contracts in the OGP I and OGP II categories, for whom small changes in grant allocations create significant difficulties
+> The solution could be in the form of a calculator on the Arts and Culture website
+> The solution need not take into account the current OGP categories
 ```
+
+This 2020 update takes the following modifications to the guidelines:
+
+  * Current OGP categories should not change "too much" (TBD)
+    * Number of categories
+    * Locations of knots
+    * Slopes
+  * Shifts of < 5% in awards are desireable if possible
+    * At individual level
+    * At District / City, Discipline, OGP Budget Category / Size, and Project Category / Goal 
+
+
+### Dimensions
+
+Each grantee is categorized in several ways:
+
+  * Location in Los Angeles / District
+  * Discipline
+  * Project Category
+  * OGP Budget Category / Size of Organization
+
+
+## Location
+
+```{r}
+knitr::kable(allocations %>% group_by(City) %>% summarise(
+  n=n(), 
+  `Total Budget`=sum(Budget_Size),
+  `Total HPA`=sum(Current.Grant100),
+  `Total FFA`=sum(Current.Awards),
+  `Total Awarded` = sum(Current.Final),
+  ) %>% 
+    ungroup() %>% 
+    mutate(`Percent Awarded` = 100* `Total Awarded` / sum(`Total Awarded`)) %>% 
+    arrange(-`Percent Awarded`)
+  
+  
+  ,
+  digits = 2, format.args=list(big.mark=',')
+)
+```
+
+
+
+## Discipline
 
 ## Project Category
 
@@ -32,22 +98,28 @@ The solution need not take into account the current OGP categories
   * _Artistic Capacity_: Provides support for new projects that increase the artistic capacity of arts organizations.
   * _Accessibility_: Provides support for new or existing projects that provide public access to arts activities and programs.
 
-## R Markdown
+__Data not available__
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+### OGP Category
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
 
-```{r cars}
-summary(cars)
-```
 
-## Including Plots
 
-You can also embed plots, for example:
+## Integration with website
 
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+The original javascript module is found at 
+
+https://www.lacountyarts.org/sites/all/modules/custom/lacac_calc_button/js/lacac_calc_button.js?pzw4vt
+
+and contains more precision on the slopes than is listed on the OGP website.
+
+
+
+## Appendix A: R Package Notes
+
+### Installation
+
+  1. Clone the github repo
+  2. Place the data files (Requests excel, awards pdf) in `data/`
+  3. Install the package using R
