@@ -2,7 +2,11 @@
 title: "OGP 2020 Analysis Draft"
 author: "Neal Fultz <neal@njnm.co>"
 date: "2/17/2020"
-output: html_document
+output: html_vignette
+vignette: >
+  %\VignetteIndexEntry{OGP 2020 Analysis}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
 ---
 
 ```{r setup, include=FALSE}
@@ -73,8 +77,8 @@ Each grantee is categorized in several ways:
 knitr::kable(allocations %>% group_by(City) %>% summarise(
   n=n(), 
   `Total Budget`=sum(Budget_Size),
-  `Total HPA`=sum(Current.Grant100),
-  `Total FFA`=sum(Current.Awards),
+  `Total Max Request`=sum(Current.Grant100),
+  `Total HPA`=sum(Current.Awards),
   `Total Awarded` = sum(Current.Final),
   ) %>% 
     ungroup() %>% 
@@ -90,6 +94,24 @@ knitr::kable(allocations %>% group_by(City) %>% summarise(
 
 
 ## Discipline
+
+```{r}
+knitr::kable(allocations %>% group_by(Discipline) %>% summarise(
+  n=n(), 
+  `Total Budget`=sum(Budget_Size),
+  `Total Max Request`=sum(Current.Grant100),
+  `Total HPA`=sum(Current.Awards),
+  `Total Awarded` = sum(Current.Final),
+  ) %>% 
+    ungroup() %>% 
+    mutate(`Percent Awarded` = 100* `Total Awarded` / sum(`Total Awarded`)) %>% 
+    arrange(-`Percent Awarded`)
+  
+  
+  ,
+  digits = 2, format.args=list(big.mark=',')
+)
+```
 
 ## Project Category
 
@@ -114,6 +136,7 @@ https://www.lacountyarts.org/sites/all/modules/custom/lacac_calc_button/js/lacac
 
 and contains more precision on the slopes than is listed on the OGP website.
 
+TODO - find contact person who can edit that file.
 
 
 ## Appendix A: R Package Notes
@@ -121,5 +144,6 @@ and contains more precision on the slopes than is listed on the OGP website.
 ### Installation
 
   1. Clone the github repo
-  2. Place the data files (Requests excel, awards pdf) in `data/`
+  2. Place the OGP data files (Requests excel, awards pdf) in `data/`
+    a. If format has changed, modify the informat constants in `data/allocations.R`
   3. Install the package using R
