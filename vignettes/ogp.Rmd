@@ -59,7 +59,11 @@ This 2020 update takes the following modifications to the guidelines:
   * Shifts of < 5% in awards are desireable if possible
     * At individual level
     * At District / City, Discipline, OGP Budget Category / Size, and Project Category / Goal 
-
+    
+  Secondary goals:  
+  * Reduce the "$0 budget" minimum payout as much as possible
+  * Reduce the "$100M" budget maximum payout as much as possible
+  * Subject to the above constraints
 
 ### Dimensions
 
@@ -134,7 +138,9 @@ The original javascript module is found at
 
 https://www.lacountyarts.org/sites/all/modules/custom/lacac_calc_button/js/lacac_calc_button.js?pzw4vt
 
-and contains more precision on the slopes than is listed on the OGP website.
+and contains more precision on the slopes than is listed on the OGP website. It is used on the website calculator widget:
+
+https://www.lacountyarts.org/funding/organizational-grant-program/ogp-grantseekers/apply/ogp-grantseekers-calculator-explained
 
 TODO - find contact person who can edit that file.
 
