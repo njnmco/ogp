@@ -10,15 +10,17 @@ vignette: >
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-library(ggplot2)
 library(ogp)
-library(dplyr)
 
-allocations <- cbind(
-  allocations,
-  Current = Award(allocations$Budget_Size, OGP.2013_forward, allocations$ScorePercent)
-)
+knitr::opts_chunk$set(echo=FALSE)
+
+if(! "Current.Awards" %in% colnames(allocations)) {
+  allocations <- cbind(
+    allocations,
+    Current = Award(allocations$Budget_Size, OGP.2013_forward, allocations$ScorePercent)
+  )
+}
+
 ```
 
 DRAFT
@@ -77,61 +79,54 @@ Each grantee is categorized in several ways:
 
 ## Location
 
-```{r}
-knitr::kable(allocations %>% group_by(City) %>% summarise(
-  n=n(), 
-  `Total Budget`=sum(Budget_Size),
-  `Total Max Request`=sum(Current.Grant100),
-  `Total HPA`=sum(Current.Awards),
-  `Total Awarded` = sum(Current.Final),
-  ) %>% 
-    ungroup() %>% 
-    mutate(`Percent Awarded` = 100* `Total Awarded` / sum(`Total Awarded`)) %>% 
-    arrange(-`Percent Awarded`)
-  
-  
-  ,
-  digits = 2, format.args=list(big.mark=',')
-)
+```{r CityTbl}
+ogp_summary_table(allocations, City, "2019 OGP Budget By City")
 ```
 
+```{r}
+ogp_summary_table(allocations, District_Most_Activity, "2019 OGP Budget By District of Most Activity") %>%
+  arrange(District_Most_Activity)
 
+```
 
 ## Discipline
 
 ```{r}
-knitr::kable(allocations %>% group_by(Discipline) %>% summarise(
-  n=n(), 
-  `Total Budget`=sum(Budget_Size),
-  `Total Max Request`=sum(Current.Grant100),
-  `Total HPA`=sum(Current.Awards),
-  `Total Awarded` = sum(Current.Final),
-  ) %>% 
-    ungroup() %>% 
-    mutate(`Percent Awarded` = 100* `Total Awarded` / sum(`Total Awarded`)) %>% 
-    arrange(-`Percent Awarded`)
-  
-  
-  ,
-  digits = 2, format.args=list(big.mark=',')
-)
+ogp_summary_table(allocations, Discipline, "2019 OGP Budget By Discipline")
 ```
 
-## Project Category
-
-  * _Sustainability_: Provides support for existing artistic and/or administrative projects that help to sustain the mission and goals of arts organizations.
-  * _Organizational Capacity_: Provides support for new projects that increase the organizational capacity and infrastructure of arts organizations.
-  * _Artistic Capacity_: Provides support for new projects that increase the artistic capacity of arts organizations.
-  * _Accessibility_: Provides support for new or existing projects that provide public access to arts activities and programs.
+## Project Objective
 
 __Data not available__
 
+Sustainability
+: Provides support for existing artistic and/or administrative projects that help to sustain the mission and goals of arts organizations.
+  
+Organizational Capacity
+: Provides support for new projects that increase the organizational capacity and infrastructure of arts organizations.
+  
+Artistic Capacity
+: Provides support for new projects that increase the artistic capacity of arts organizations.
+  
+Accessibility
+: Provides support for new or existing projects that provide public access to arts activities and programs.
+
+
 ### OGP Category
 
+```{r }
+ogp_summary_table(allocations, OGP_Budget_Category, "2019 OGP Budget By OGP Budget Category") %>% 
+  arrange(OGP_Budget_Category) %>% 
+  rename(`OGP Budget Cat`=OGP_Budget_Category)
+```
 
 
 
-## Integration with website
+
+
+
+
+# Integration with website
 
 
 The original javascript module is found at 

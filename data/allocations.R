@@ -37,8 +37,11 @@ local({
                 "Rounded_Allocation_Final Award", "Funding_Year",
                 "Score", "Total_Grant_Award", "Prior_Budget_Size", "Variance_Value",
                 "NOTES", "Decrease_award_per", "Decrease_score", "Budget_Decrease",
-                "Project_Description", "Office_Location", "District_Most_Activity",
-                "District", "decreased_score_q", "tail")] <- NULL
+                "Project_Description", "Office_Location","decreased_score_q", "tail")] <- NULL
+
+
+  allocations$OGP_Budget_Category <- as.factor(allocations$OGP_Budget_Category)
+  allocations$District_Most_Activity <- as.factor(allocations$District_Most_Activity)
 
 
   tbl <- tabulizer::extract_tables("ogp_1920_list_of_grantees_for_web.pdf")
@@ -59,7 +62,8 @@ local({
   tbl$Discipline <- sub("(?<=Music)[^A-Z]+", " - ", tbl$Discipline, perl=TRUE)
 
 
-
+  ### Fix typo
+  tbl$City <- sub("Norh Hollywood", "North Hollywood", tbl$City)
 
   tbl[1:3] <- lapply(tbl[1:3], trimws)
 

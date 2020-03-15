@@ -3,19 +3,22 @@ Type: Package
 Title: LA County OGP
 Version: 0.1.0
 Author: Neal Fultz
-Maintainer: Neal Fultz <nfultz@gmail.com>
+Maintainer: Neal Fultz <neal@njnm.co>
 Description: More about what it does (maybe more than one line)
     Use four spaces when indenting paragraphs within the Description.
 Copyright: njnm Consulting 2020
 License: All Rights Reserved
 Encoding: UTF-8
 LazyData: true
-Imports:
+Depends:
   readxl,
-  tabulizer
-Suggests:
-  ggplot2,
-  knitr,
   dplyr,
-  rmarkdown
+  ggplot2,
+  tabulizer,
+  knitr,
+  rmarkdown,
+  LowRankQP,
+  Matrix,
+  rlang,
+  kableExtra
 VignetteBuilder: knitr
