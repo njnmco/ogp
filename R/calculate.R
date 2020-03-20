@@ -51,18 +51,19 @@ OGP.2013_forward <- function(B, beta=NULL) {
   if(is.null(beta)) {
     c1 <- 0.3939394
     c2 <- 0.0053896
-    beta <-         c(7500,     0,        0,    c1,    c1,  .0375,      c2,       c2,        0)
+    categories <-   c(0,        1,     7500, 17500, 50000, 100000, 1500000, 10000000, 40000000)
+    beta       <-   c(7500,     0,        0,    c1,    c1,  .0375,      c2,       c2,        0)
   }
 
   drop(basis(B) %*% beta)
 }
 
 
-Award <- function(Budget, Grant100Formula, Scores, TotalBudget=4500000, ...) {
+Award <- function(Budget, Grant100Formula, Scores, TotalBudget=4500000, Year=1, ...) {
 
   Grant100 <- Grant100Formula(Budget)
   Awards   <-  Grant100 * Scores
-  mod      <- TotalBudget / sum(Awards)
+  mod      <- TotalBudget / ave(Awards, Year, FUN=sum)
 
   Final <- Awards * mod
 
@@ -105,7 +106,8 @@ scenario <- function(data,
                        B = data$Budget_Size,
                        Y = data$Current.Final,
                        Y_low = .95 * data$Current.Grant100,
-                       groups_const = c("City", "District_Most_Activity", "Discipline", "OGP_Budget_Category")
+                       groups_const = c("City", "District_Most_Activity", "Discipline", "OGP_Budget_Category"),
+                       mod=NULL, verbose=FALSE, niter=100
                      ) {
 
   stopifnot(all(groups_const %in% colnames(data)))
@@ -117,9 +119,36 @@ scenario <- function(data,
   Y <- Y
 
   g_consts_l <- lapply(data[groups_const], make_group_constraint, B=B, b_0=Y_low)
-  Amat <- do.call(rbind, lapply(g_consts_l, `[[`, "Amat"))
+  Amat <- as.matrix(do.call(rbind, lapply(g_consts_l, `[[`, "Amat")))
   b_0 <- Reduce(c, lapply(g_consts_l, `[[`, "b_0"))
 
+  # Remove Constraints from one org
+  i <- Amat[,1] > 1
+  Amat <- Amat[i, ]
+  b_0 <- b_0[i]
+
+  sigma <- basis(100*1000000)[1,]
+
+  ### Rescale to 0:1
+  X    <- X %*% diag(1/sigma)
+  Amat <- Amat %*% diag(1/sigma)
+
+
+
+  # Add slack variables
+  slack <- -diag(nrow(Amat))
+
+  X2 <- cbind(X, matrix(0, nrow=nrow(X), ncol=ncol(slack)))
+  Amat2 <- cbind(Amat, slack)
+  b_02 <- b_0
+  u2 <- c(7700, sigma[-1], rep(1000000, nrow(slack)) ) # 7700 max + scaled box constraints [$0,$1]
+  s <- sqrt(max(sum(b_02, Y)))
+
+  if(is.list(mod)){
+    if("s" %in% names(mod)) s <- s * mod[["s"]]
+
+    if("base" %in% names(mod)) u2[1] <- mod[["base"]]
+  }
 
   # coef_consts_l <- make_coef_constraints(ncol(X))
   #
@@ -127,17 +156,21 @@ scenario <- function(data,
   # b_0 <- c(b_0, coef_consts_l$b_0)
 
   # solve.QP(crossprod(X), crossprod(X,Y), t(Amat), b_0)
-
+  sol <- LowRankQP(crossprod(X2) /s, crossprod(X2,Y) / s,
+                   as.matrix(Amat2) /s, b_02 /s,
+                   u=u2,
+                   verbose=verbose, niter=niter); #print(round(.Last.value$alpha[1:9] / sigma, 4));
+  round(sol$alpha[1:9] / sigma, 4)
 }
 
 
 
 ##############################################################################################
 
-ogp_summary_table <- function(data, g, caption=NULL) {
+ogp_summary_table <- function(data, g, caption=NULL, Year=19) {
   g <- enquo(g)
   caption = caption %||% as.character(get_expr(g))
-  data %>% group_by(!!g) %>% summarise(
+  data %>% filter(Year %in% !!Year) %>% group_by(!!g) %>% summarise(
     n=n(),
     `Total Budget`=sum(Budget_Size),
     `Total Max Request`=sum(Current.Grant100),
