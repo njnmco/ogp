@@ -59,9 +59,9 @@ OGP.2013_forward <- function(B, beta=NULL) {
 }
 
 
-Award <- function(Budget, Grant100Formula, Scores, TotalBudget=4500000, Year=1, ...) {
+Award <- function(Budget, Grant100Formula, Scores, TotalBudget=4500000, Year=1, beta=NULL, ...) {
 
-  Grant100 <- Grant100Formula(Budget)
+  Grant100 <- Grant100Formula(Budget, beta=beta)
   Awards   <-  Grant100 * Scores
   mod      <- TotalBudget / ave(Awards, Year, FUN=sum)
 
@@ -86,21 +86,6 @@ make_group_constraint <- function(B, group, b_0=B, dropZeros=TRUE) {
 }
 
 
-make_coef_constraints <- function(k) {
-
-  Amat_beta_gt_0 <- diag(k)[-1,]
-  b_0_beta_gt_0  <- rep(0, k)[-1]
-
-  Amat_beta_lt_50p <- -diag(k)[-1,]
-  b_0_beta_lt_50p  <- -rep(.5, k)[-1]
-
-
-  return(list(
-    Amat=rbind(Amat_beta_gt_0, Amat_beta_lt_50p),
-    b_0 =c(b_0_beta_gt_0, b_0_beta_lt_50p)
-    ))
-
-}
 
 scenario <- function(data,
                        B = data$Budget_Size,
@@ -127,28 +112,42 @@ scenario <- function(data,
   Amat <- Amat[i, ]
   b_0 <- b_0[i]
 
-  sigma <- basis(100*1000000)[1,]
+  if(hasName(mod, "extra_inq")) {
+    Amat <- rbind(Amat, mod$extra_inq[,-10])
+    b_0 <- c(b_0, mod$extra_inq[,10])
+  }
+
+  k_ineq <- nrow(Amat)
+
+  if(hasName(mod, "extra_eq")) {
+    Amat <- rbind(Amat, mod$extra_eq[,-10])
+    b_0 <- c(b_0, mod$extra_eq[,10])
+  }
+
 
   ### Rescale to 0:1
+  sigma <- basis(100*1000000)[1,]
   X    <- X %*% diag(1/sigma)
   Amat <- Amat %*% diag(1/sigma)
 
 
 
   # Add slack variables
-  slack <- -diag(nrow(Amat))
+  slack <- -diag(nrow=nrow(Amat), ncol=k_ineq)
 
   X2 <- cbind(X, matrix(0, nrow=nrow(X), ncol=ncol(slack)))
   Amat2 <- cbind(Amat, slack)
   b_02 <- b_0
-  u2 <- c(7700, sigma[-1], rep(1000000, nrow(slack)) ) # 7700 max + scaled box constraints [$0,$1]
+  u2 <- c(7700, sigma[-1], rep(1000000, ncol(slack)) ) # 7700 max + scaled box constraints [$0,$1]
   s <- sqrt(max(sum(b_02, Y)))
 
-  if(is.list(mod)){
-    if("s" %in% names(mod)) s <- s * mod[["s"]]
 
-    if("base" %in% names(mod)) u2[1] <- mod[["base"]]
-  }
+  if(hasName(mod, "s")) s <- s * mod[["s"]]
+  if(hasName(mod, "base")) u2[1] <- mod[["base"]]
+  if(hasName(mod, "slopes")) u2[2:9] <- mod[["slopes"]] * u2[2:9]
+
+
+
 
   # coef_consts_l <- make_coef_constraints(ncol(X))
   #

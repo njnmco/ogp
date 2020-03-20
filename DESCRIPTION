@@ -20,5 +20,6 @@ Depends:
   LowRankQP,
   Matrix,
   rlang,
+  reshape2,
   kableExtra
 VignetteBuilder: knitr

@@ -122,19 +122,259 @@ ogp_summary_table(allocations, OGP_Budget_Category, "2018 + 2019 OGP Budget By O
 
 ## Scenarios
 
-### Scenario 1 - 5% drop across board
+```{r scenarios}
+# Scenario 1 - 5% flat reduction
+#scenario1 <- scenario(allocations); .Last.value
+scenario1 <- c(7125, 0, 0, 0.3742, 0.3742, 0.0356, 0.0051, 0.0051, 0)
 
-  * In this scenario, all Max Requests Awards are reduced by 5%.
-  * Because the awards are ultimately rescaled to the County budget, no impact on final awards or Percent Awarded.
-  
+
+
 ### Scenario 2 - 100% match for micro up to $7500, recalibrate
+eq23 <- matrix(ncol=10, byrow=TRUE, c(
+0, 0, -1,  1, 0, 0, 0, 0, 0,   0,
+0, 0, -1,  0, 1, 0, 0, 0, 0,   0,
+0, 0,  0,  0, 0, 0, 1,-1, 0,   0,  
+0, 0,  0,  0, 0, 0, 0, 0,-1,   0  
+))
+#scenario2 <- scenario(allocations, mod=list(base=100, extra_eq=eq23, s=.3),  niter=55); .Last.value
+scenario2 <- c(0, 1, 0.3525, 0.3525, 0.3525, 0.0345, 0.0051, 0.0051, 0)
 
 
-### Scenario 3 - 40% match for micro up to $17500, recalibrate
-
+### Scenario 3 - 50% match for micro up to $17500, recalibrate
+eq12 <- matrix(ncol=10, byrow=TRUE, c(
+0, -1, 1,  0, 0, 0, 0, 0, 0, 0,
+0, 0,  0,  -1, 1, 0, 0, 0, 0, 0,
+0, 0,  0,  0, 0, 0, 1,-1, 0,   0,  
+0, 0,  0,  0, 0, 0, 0, 0,-1,   0  
+))
+#scenario3 <- scenario(allocations, mod=list(base=100, extra_eq=eq12), niter=53); .Last.value
+scenario3 <- c(0, 0.50, 0.50, 0.3762, 0.3762, 0.034, 0.0051, 0.0051, 0)
 
 ### Scenario 4 - $2500 flat for micro up to $2500, recalibrate
+eq123 <- matrix(ncol=10, byrow=TRUE, c(
+0, 1, -1,  0, 0, 0, 0, 0, 0, 0,  
+0, 1,  0, -1, 0, 0, 0, 0, 0, 0,
+0, 1,  0, -0,-1, 0, 0, 0, 0, 0,
+0, 0,  0,  0, 0, 0, 1,-1, 0,   0,  
+0, 0,  0,  0, 0, 0, 0, 0,-1,   0  
+))
+#scenario4 <- scenario(allocations, mod=list(base=2500, extra_eq=eq123), niter=47); .Last.value
+scenario4 <-c(2500, 0.3696, 0.3696, 0.3696, 0.3696, 0.0346, 0.0051, 0.0051, 0)
+
+
+```
+
   
+1. Scenario 1 
+  - 5% drop across board
+  - In this scenario, all Max Requests Awards are reduced by 5%.
+  - Because the awards are ultimately rescaled to the County budget, no impact on final awards or Percent Awarded.
+
+2. Scenario 2 
+  - 100% match for micro up to $7500, recalibrate
+
+3. Scenario 3 
+  - 75% match for micro up to $17500, recalibrate
+
+4. Scenario 4 
+  - \$2500 flat for micro up to $2500, recalibrate
+
+```{r ScenComp}
+b <- cumsum(basis(100*1000000))
+kable(cbind(
+  Budget = b, 
+  Current= OGP.2013_forward(b),
+  Scenario1= OGP.2013_forward(b, scenario1),
+  Scenario2= OGP.2013_forward(b, scenario2),
+  Scenario3= OGP.2013_forward(b, scenario3),
+  Scenario4= OGP.2013_forward(b, scenario4)
+), digits = -2, format.args=list(big.mark=',', scientific = FALSE), caption="Award Amounts") %>% column_spec(1, border_right = TRUE)
+
+```
+
+```{r}
+zzz <- data.frame(Budget=b,
+Current= OGP.2013_forward(b),
+  Scenario1= OGP.2013_forward(b, scenario1),
+  Scenario2= OGP.2013_forward(b, scenario2),
+  Scenario3= OGP.2013_forward(b, scenario3),
+  Scenario4= OGP.2013_forward(b, scenario4))
+
+zzz_long <- melt(zzz, id.vars="Budget", variable.name="Scenario", value.name = "MaxAward")
+
+ggplot(zzz_long) + aes(x=Budget, y=MaxAward, color=Scenario) + geom_line() 
+
+```
+
+```{r}
+ggplot(zzz_long) + aes(x=Budget, y=MaxAward, color=Scenario) + geom_line() + xlim(1, 50000) + ylim(0, 30000) +
+  geom_point(aes(x=Budget_Size), data=allocations, y=0, pch='x', color='black')
+
+```
+
+
+
+### Comparison by group
+```{r all_sec_counterfactual}
+  Current  = Award(allocations$Budget_Size, OGP.2013_forward, allocations$ScorePercent, Year = allocations$Year, beta=NULL)
+  Scenario1= Award(allocations$Budget_Size, OGP.2013_forward, allocations$ScorePercent, Year = allocations$Year, beta=scenario1)
+  Scenario2= Award(allocations$Budget_Size, OGP.2013_forward, allocations$ScorePercent, Year = allocations$Year, beta=scenario2)
+  Scenario3= Award(allocations$Budget_Size, OGP.2013_forward, allocations$ScorePercent, Year = allocations$Year, beta=scenario3)
+  Scenario4= Award(allocations$Budget_Size, OGP.2013_forward, allocations$ScorePercent, Year = allocations$Year, beta=scenario4)
+  
+  all_scenarios <- cbind( allocations[c('Organization', 'Year', 'OGP_Budget_Category', "District_Most_Activity", "Discipline", "Budget_Size")],
+                          Current=Current, 
+                          Scenario1=Scenario1, 
+                          Scenario2=Scenario2, 
+                          Scenario3=Scenario3, 
+                          Scenario4=Scenario4)
+  
+```
+
+
+#### District
+
+```{r scen_distr}
+d1 <- 
+  all_scenarios %>% group_by(District_Most_Activity) %>% 
+    summarize(Current.Final=sum(Current.Final),
+              Scenario1.Final = sum(Scenario1.Final),
+              Scenario2.Final = sum(Scenario2.Final),
+              Scenario3.Final = sum(Scenario3.Final),
+              Scenario4.Final = sum(Scenario4.Final)
+              ) 
+
+  kable(d1, digits = -2, format.args=list(big.mark=','), caption="Award Amounts by District")
+```
+
+```{r scen_disc_distr}
+d1 %>% ungroup %>% 
+  mutate(Current.Percent = 100* Current.Final / sum(Current.Final),
+         Scenario1.Percent = 100* Scenario1.Final / sum(Scenario1.Final),
+         Scenario2.Percent = 100* Scenario2.Final / sum(Scenario2.Final),
+         Scenario3.Percent = 100* Scenario3.Final / sum(Scenario3.Final),
+         Scenario4.Percent = 100* Scenario4.Final / sum(Scenario4.Final),
+         Current.Final=NULL,	Scenario1.Final=NULL,	Scenario2.Final=NULL,	Scenario3.Final=NULL,	Scenario4.Final=NULL	
+         ) %>% 
+    kable(digits = 2, format.args=list(big.mark=','), caption="Awards % by District")
+
+```
+
+
+#### OGP Budget Band
+
+```{r scen_ogp}
+d1 <- 
+  all_scenarios %>% group_by(OGP_Budget_Category) %>% 
+    summarize(Current.Final=sum(Current.Final),
+              Scenario1.Final = sum(Scenario1.Final),
+              Scenario2.Final = sum(Scenario2.Final),
+              Scenario3.Final = sum(Scenario3.Final),
+              Scenario4.Final = sum(Scenario4.Final)
+              ) 
+
+  kable(d1, digits = -2, format.args=list(big.mark=','), caption="Award Amounts by OGP_Budget_Category")
+```
+
+```{r scen_disc_ogp}
+d1 %>% ungroup %>% 
+  mutate(Current.Percent = 100* Current.Final / sum(Current.Final),
+         Scenario1.Percent = 100* Scenario1.Final / sum(Scenario1.Final),
+         Scenario2.Percent = 100* Scenario2.Final / sum(Scenario2.Final),
+         Scenario3.Percent = 100* Scenario3.Final / sum(Scenario3.Final),
+         Scenario4.Percent = 100* Scenario4.Final / sum(Scenario4.Final),
+         Current.Final=NULL,	Scenario1.Final=NULL,	Scenario2.Final=NULL,	Scenario3.Final=NULL,	Scenario4.Final=NULL	
+         ) %>% 
+    kable(digits = 2, format.args=list(big.mark=','), caption="Awards % by OGP_Budget_Category")
+
+```
+
+
+#### Discipline
+
+```{r scen_disc}
+d1 <- 
+  all_scenarios %>% group_by(Discipline) %>% 
+    summarize(Current.Final=sum(Current.Final),
+              Scenario1.Final = sum(Scenario1.Final),
+              Scenario2.Final = sum(Scenario2.Final),
+              Scenario3.Final = sum(Scenario3.Final),
+              Scenario4.Final = sum(Scenario4.Final)
+              ) 
+
+  kable(d1, digits = -2, format.args=list(big.mark=','), caption="Award Amounts by Discipline")
+```
+
+```{r scen_disc_perc}
+d1 %>% ungroup %>% 
+  mutate(Current.Percent = 100* Current.Final / sum(Current.Final),
+         Scenario1.Percent = 100* Scenario1.Final / sum(Scenario1.Final),
+         Scenario2.Percent = 100* Scenario2.Final / sum(Scenario2.Final),
+         Scenario3.Percent = 100* Scenario3.Final / sum(Scenario3.Final),
+         Scenario4.Percent = 100* Scenario4.Final / sum(Scenario4.Final),
+         Current.Final=NULL,	Scenario1.Final=NULL,	Scenario2.Final=NULL,	Scenario3.Final=NULL,	Scenario4.Final=NULL	
+         ) %>% 
+    kable(digits = 2, format.args=list(big.mark=','), caption="Awards % by Discipline")
+
+```
+
+#### Largest changes in each scenario
+
+```{r}
+all_scenarios %>% mutate(Scenario=Scenario1.Final, delta=Scenario - Current.Final, percentChange= 100*(Scenario /Current.Final - 1)) %>% 
+  arrange(-Budget_Size) %>% filter(rank(-abs(percentChange))< 20 | rank(-abs(delta))< 20 ) %>% 
+ select(Organization, Budget_Size, Current.Final, Scenario, delta, percentChange) %>% 
+  kable(digits = 2, format.args=list(big.mark=','), caption="Largest Changes, Scenario1")
+
+```
+  
+```{r}
+all_scenarios %>% mutate(Scenario=Scenario2.Final, delta=Scenario - Current.Final, percentChange= 100*(Scenario /Current.Final - 1)) %>% 
+  arrange(-Budget_Size) %>% filter(rank(-abs(percentChange))< 20 | rank(-abs(delta))< 20 ) %>% 
+ select(Organization, Budget_Size, Current.Final, Scenario, delta, percentChange) %>% 
+  kable(digits = 2, format.args=list(big.mark=','), caption="Largest Changes, Scenario2")
+
+```  
+
+```{r}
+all_scenarios %>% mutate(Scenario=Scenario3.Final, delta=Scenario - Current.Final, percentChange= 100*(Scenario /Current.Final - 1)) %>% 
+  arrange(-Budget_Size) %>% filter(rank(-abs(percentChange))< 20 | rank(-abs(delta))< 20 ) %>% 
+ select(Organization, Budget_Size, Current.Final, Scenario, delta, percentChange) %>% 
+  kable(digits = 2, format.args=list(big.mark=','), caption="Largest Changes, Scenario3")
+
+```
+
+```{r}
+all_scenarios %>% mutate(Scenario=Scenario4.Final, delta=Scenario - Current.Final, percentChange= 100*(Scenario /Current.Final - 1)) %>% 
+  arrange(-Budget_Size) %>% filter(rank(-abs(percentChange))< 20 | rank(-abs(delta))< 20 ) %>% 
+ select(Organization, Budget_Size, Current.Final, Scenario, delta, percentChange) %>% 
+  kable(digits = 2, format.args=list(big.mark=','), caption="Largest Changes, Scenario4")
+
+```
+
+
+```{r}
+#all_scenarios %>% mutate(Scenario=Scenario2.Final, delta=Scenario - Current.Final, percentChange= 100*(Scenario /Current.Final - 1)) %>% 
+#  ggplot() + aes(x=percentChange) + geom_histogram()
+```
+
+
+#### Total changes
+
+```{r}
+zzz <- all_scenarios[c('Scenario1.Final','Scenario2.Final','Scenario3.Final','Scenario4.Final')] - all_scenarios$Current.Final
+zzz <- data.frame(Organization=all_scenarios$Organization, zzz)
+
+
+melt(zzz, "Organization") %>% 
+  group_by(Scenario=sub(".Final", "", variable), 
+           delta=ifelse(sign(value) > 0, '\\+', '\\-')
+           ) %>% 
+  summarise(n=n(), avg=mean(value), min=min(value), med=median(value), max=max(value)) %>% 
+    kable( digits=0, caption="Types / Sizes of Changes")
+
+```
+
   
 ### Comments
 
