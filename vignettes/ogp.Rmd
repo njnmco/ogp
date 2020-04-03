@@ -37,10 +37,11 @@ number of new applicants, and non-profit growth, the estimate provided to non-pr
 
 Here, we develop a methodology for recalibrating the formula given a set of constraints, and investigate 
 four feasible scenarios to determine which is best to move forward with:
-  * 5% reduction across board
-  * 100% match up to $7500 + recalibrate
-  * 50%  match up to $17500 + recalibrate
-  * $2500 intercept + recalibrate 
+
+* 5% reduction across board
+* 100% match up to $7500 + recalibrate
+* 50%  match up to $17500 + recalibrate
+* $2500 intercept + recalibrate 
 
 ## Guiding Principles
 
@@ -61,16 +62,16 @@ This 2020 update takes the following modifications to the guidelines:
 
   * Current formula categories should not change "too much" (TBD)
     * Number of categories
-    * Locations of cutpoints between categories
+    * Locations of cut-points between categories
     * Slopes
-  * Shifts of < 5% in awards are desireable if possible
+  * Shifts of < 5% in awards are desirable if possible
     * At individual level
     * At District / City, Discipline, OGP Budget Category / Size, and Project Category / Goal 
     
 Secondary goals:  
 
   * Reduce the "$1 budget" minimum payout as much as is feasible
-    * With special care given to organizations that recieved more than 100% of budget previously (*"overfunded"*)
+    * With special care given to organizations that received more than 100% of budget previously (*"over-funded"*)
   * Reduce the "$100M" budget maximum payout as much as is feasible
   * Subject to the above constraints
   
@@ -81,7 +82,7 @@ An applicants' award is calculated in several steps:
   1. Max Request = f(Applicant Budget) <br/>
     where f is a piecewise linear function, with different slopes per group, similar to tax brackets.
   
-  2. Score is determined by a panel of reviewers, from 0-100%, based on a set of criterion and expert judgement. If
+  2. Score is determined by a panel of reviewers, from 0-100%, based on a set of criterion and expert judgment. If
   a request scores high enough, it moves on to the next steps.
     
   3. Scored Request = Score * Max Request
@@ -165,7 +166,7 @@ In 2013, the formula introduced several categories based on applicant budget siz
   * 1.5M - 40M
   * 40M+
   
-These categories were choosen with domain knowledge, roughly corresponding to S, M, L and XL non-profits. The 2013 formula
+These categories were chosen with domain knowledge, roughly corresponding to S, M, L and XL non-profits. The 2013 formula
 also included two features worth noting: the XL category was awarded a flat amount of $300k, and the S category had a minimum
 award of $7500 (conceptually an organization with only $1 of budget could qualify). Although there were no "micro-non-profits" 
 when the formula was created, there are now several applicants whose max request is 200-400% of their annual budget because of 
@@ -182,8 +183,8 @@ ogp_summary_table(allocations, OGP_Budget_Category, "2018 + 2019 OGP Budget By F
 The scoring and County Funds process is outside the control and scope of this project, so we will focus
 on finding a new Max Request formula that matches closely the final awards that were actually awarded.
 This newly calibrated formula must obey a set of constraints, chiefly that no group of the above
-categories (City, District, Discpline, Funding Category) should decrease in total funds by more than 5%.
-5% was choosen by domain knowledge as an estimate of the 2-year change in the County Funding rate,
+categories (City, District, Discipline, Funding Category) should decrease in total funds by more than 5%.
+5% was chosen by domain knowledge as an estimate of the 2-year change in the County Funding rate,
 which incorporates the typical growth among renewals and the typical number of new applicants. 
 
 If we were starting from scratch, Isotonic Regression ^[See de Leeuw 2009, for instance] could be a 
@@ -254,7 +255,7 @@ scenario4 <-c(2500, 0.3696, 0.3696, 0.3696, 0.3696, 0.0346, 0.0051, 0.0051, 0)
 
 ```
 
-By applying extra constraints amond the $1 award, the micro category slope, and the category 1 slope, we can create a set of
+By applying extra constraints around the $1 award, the micro category slope, and the category 1 slope, we can create a set of
 several different solutions:
   
 1. Scenario 1 
@@ -321,7 +322,7 @@ ggplot(zzz_long) + aes(x=Budget, y=MaxAward, color=Scenario) + geom_line() +
 ```
 
 Scenarios 2,3, and 4 each intersect the current line, which means that within the smallest category, the max request max decrease, but above a certain point
-the max request will increase. This breakeven point is between \$7500 and $15000 depending on the scenario. The 100% funding line is overlaid as a dashed line;
+the max request will increase. This break-even point is between \$7500 and $15000 depending on the scenario. The 100% funding line is overlaid as a dashed line;
 note that there are several organizations in the section where the current plan is greater, meaning that there max request is more than 100% of their budget.
 
 ## Comparison by final awards by group
@@ -528,7 +529,7 @@ melt(zzz, c("Organization", "OGP_Budget_Category")) %>%
 ### Final Comments and Caveats
 
 * All of the above scenarios can mixed - if it were desired to split the difference between Scenario 1 and 3, for example,
-    their coefficients can be averged; this would still satisfy all the group constraints previously described.
+    their coefficients can be averaged; this would still satisfy all the group constraints previously described.
 * All of the above figures are based on historical data and the assumption that it is representative of the process moving 
     forward. There are several reasons why this may not be the case:
     * The increase in the standard deduction may disincentive smaller donations, reducing organization budgets and therefore
@@ -549,7 +550,7 @@ melt(zzz, c("Organization", "OGP_Budget_Category")) %>%
 # Integration with website
 
 
-The original javascript module is found at 
+The original JavaScript module is found at 
 
 https://www.lacountyarts.org/sites/all/modules/custom/lacac_calc_button/js/lacac_calc_button.js?pzw4vt
 
@@ -557,14 +558,14 @@ and contains more precision on the slopes than is listed on the OGP website. It 
 
 https://www.lacountyarts.org/funding/organizational-grant-program/ogp-grantseekers/apply/ogp-grantseekers-calculator-explained
 
-When an appropriate plan is choosen, it will be straightforward to update the slopes in that module.
+When an appropriate plan is chosen, it will be straightforward to update the slopes in that module.
 
 ## Appendix A: R Package Notes
 
 ### Installation
 
-  1. Clone the github repo
-  2. Place the OGP data files (Requests excel, awards pdf) in `data/`
+  1. Clone the GitHub repo
+  2. Place the OGP data files (Requests excel, awards PDF) in `data/`
     a. If input formats have changed, modify the code in `data/allocations.R`
   3. Install the package using R
   4. In R, knit this vignette (`ogp.Rmd`) to regenerate all plots and tables.
