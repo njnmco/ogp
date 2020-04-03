@@ -1,7 +1,7 @@
 ---
-title: "OGP 2020 Analysis Draft"
-author: "Neal Fultz <neal@njnm.co>"
-date: "2/17/2020"
+title: "OGP 2020 Analysis Draft 2"
+author: "Neal Fultz <<neal@njnm.co>>"
+date: "4/2/2020"
 output: html_vignette
 vignette: >
   %\VignetteIndexEntry{OGP 2020 Analysis}
@@ -23,23 +23,28 @@ if(! "Current.Awards" %in% colnames(allocations)) {
 
 ```
 
-DRAFT
-DRAFT
-DRAFT
-DRAFT
-DRAFT
-DRAFT
-DRAFT
-DRAFT
 
 ## Executive Summary
 
-TODO
+LA County provides $4.5m dollars in support to arts nonprofits each year through it's Organizational Grant 
+Program, run by the Department of Arts and Culture. This program is unique in that it provides funds for
+nonprofits for access, capacity, infrastructure and growth, which are typically out-of-scope for other grants. 
 
+The Department of Arts and Culture computes each organization's award using a formula that
+accounts for the organization's size, its score by a review panel, and the total amount of funds available.
+This formula was last calibrated in 2013. Since then, through a combinations of high renewal rates, increased
+number of new applicants, and non-profit growth, the estimate provided to non-profits is now off by nearly 50%.
+
+Here, we develop a methodology for recalibrating the formula given a set of constraints, and investigate 
+four feasible scenarios to determine which is best to move forward with:
+  * 5% reduction across board
+  * 100% match up to $7500 + recalibrate
+  * 50%  match up to $17500 + recalibrate
+  * $2500 intercept + recalibrate 
 
 ## Guiding Principles
 
-From: https://www.lacountyarts.org/funding/organizational-grant-program/ogp-grantseekers/apply/ogp-grantseekers-calculator-explained
+The original project outlined several key goals in developing the funding formula. (From: https://www.lacountyarts.org/funding/organizational-grant-program/ogp-grantseekers/apply/ogp-grantseekers-calculator-explained )
 
 ```
 > Working with a professional statistician, the following principles were used to guide the formula creation in 2013:
@@ -54,30 +59,69 @@ From: https://www.lacountyarts.org/funding/organizational-grant-program/ogp-gran
 
 This 2020 update takes the following modifications to the guidelines:
 
-  * Current OGP categories should not change "too much" (TBD)
+  * Current formula categories should not change "too much" (TBD)
     * Number of categories
-    * Locations of knots
+    * Locations of cutpoints between categories
     * Slopes
   * Shifts of < 5% in awards are desireable if possible
     * At individual level
     * At District / City, Discipline, OGP Budget Category / Size, and Project Category / Goal 
     
-  Secondary goals:  
-  * Reduce the "$0 budget" minimum payout as much as possible
-  * Reduce the "$100M" budget maximum payout as much as possible
-  * Subject to the above constraints
+Secondary goals:  
 
-### Dimensions
+  * Reduce the "$1 budget" minimum payout as much as is feasible
+    * With special care given to organizations that recieved more than 100% of budget previously (*"overfunded"*)
+  * Reduce the "$100M" budget maximum payout as much as is feasible
+  * Subject to the above constraints
+  
+## Award Methodology
+
+An applicants' award is calculated in several steps:
+
+  1. Max Request = f(Applicant Budget) <br/>
+    where f is a piecewise linear function, with different slopes per group, similar to tax brackets.
+  
+  2. Score is determined by a panel of reviewers, from 0-100%, based on a set of criterion and expert judgement. If
+  a request scores high enough, it moves on to the next steps.
+    
+  3. Scored Request = Score * Max Request
+
+  4. p = County Funds  / Sum(Scored Requests) <br/>
+     p is the percent of requested dollars that the county can fund in a given year. 1/p can be 
+     interpreted as the amount the program is "over-subscribed."
+     
+  5. Final (Actual) Award = p * Scored Request
+  
+### Notes
+
+Because of steps 4 and 5, where the awards are scaled down to the available County Funds for a year,
+each organization's award is based not only upon its budget and score, but also upon the total demand in the 
+county. Over time, the number and size of applicants has grown much faster than County Funding, 
+resulting in p decreasing from near 100% to less than 50%. 
+
+
+## Data Dimensions
+
+Historical awards are published on the OGP website, which we can analyze to gain some insight into 
+the current trends. Because the OGP program is a two-year award, we have aggregated the 2018-2019 and
+2019-2020 cohorts.
 
 Each grantee is categorized in several ways:
 
-  * Location in Los Angeles / District
+  * Location in Los Angeles County
+    * City
+    * District
   * Discipline
   * Project Category
-  * OGP Budget Category / Size of Organization
+  * Size of Organization
+    * OGP Budget Category (per guidelines)
+    * Formula Category
+
+We present summary tables of the applicant pool, aggregated by each of these dimensions, for reference. ^[All tables
+are recalculated from the source data, and may be rounded slightly differently.]
 
 
-## Location
+### Location
 
 ```{r CityTbl}
 ogp_summary_table(allocations, City, "2018 + 2019 OGP Budget By City", Year = 18:19)
@@ -97,7 +141,7 @@ ogp_summary_table(allocations, Discipline, "2018 + 2019 OGP Budget By Discipline
 
 ## Project Objective
 
-__Data not available__
+__Data not available__ - but to the extent that the review committees consider this as a factor in an applicants score, it's worth mentioning. 
 
 Sustainability
 : Provides support for existing artistic and/or administrative projects that help to sustain the mission and goals of arts organizations.
@@ -112,12 +156,58 @@ Accessibility
 : Provides support for new or existing projects that provide public access to arts activities and programs.
 
 
-### OGP Category
+### Formula Category
+
+In 2013, the formula introduced several categories based on applicant budget size:
+
+  * <100k
+  * 100k - 1.5M
+  * 1.5M - 40M
+  * 40M+
+  
+These categories were choosen with domain knowledge, roughly corresponding to S, M, L and XL non-profits. The 2013 formula
+also included two features worth noting: the XL category was awarded a flat amount of $300k, and the S category had a minimum
+award of $7500 (conceptually an organization with only $1 of budget could qualify). Although there were no "micro-non-profits" 
+when the formula was created, there are now several applicants whose max request is 200-400% of their annual budget because of 
+this feature.
+  
 
 ```{r }
-ogp_summary_table(allocations, OGP_Budget_Category, "2018 + 2019 OGP Budget By OGP Budget Category", Year=18:19) %>% 
-  arrange(OGP_Budget_Category) 
+ogp_summary_table(allocations, OGP_Budget_Category, "2018 + 2019 OGP Budget By Formula Category", Year=18:19) %>% 
+  arrange(OGP_Budget_Category) %>% rename(`Formula Category`=OGP_Budget_Category)
 ```
+
+## Recalibration Methodology
+
+The scoring and County Funds process is outside the control and scope of this project, so we will focus
+on finding a new Max Request formula that matches closely the final awards that were actually awarded.
+This newly calibrated formula must obey a set of constraints, chiefly that no group of the above
+categories (City, District, Discpline, Funding Category) should decrease in total funds by more than 5%.
+5% was choosen by domain knowledge as an estimate of the 2-year change in the County Funding rate,
+which incorporates the typical growth among renewals and the typical number of new applicants. 
+
+If we were starting from scratch, Isotonic Regression ^[See de Leeuw 2009, for instance] could be a 
+useful and appropriate tool. However, it does have the tendency to create large, flat regions, which
+could be regressive (in the economics sense of the word). Additionally, most IR software does not
+allow the specification of additional constraints.
+
+Instead, we can use the existing groups and only find new slopes using Quadratic Programming. Quadratic
+Programming will minimize the (squared) distance between the new funding curve and the actual awards,
+subject to a set of constraints. ^[There are several free packages for QP: `quadprog`, `ipoptr` and `LowRankQP`
+are all quite good, and have different sets of features. We used `LowRankQP`]. Care must be taken with
+scaling awards, because the range (max - min) of budgets is nearly $100M dollars; this can and does 
+cause precision issues in the software.
+
+Because `p << .95`, all the actual data points are below the top of the constraints, and so the constraints
+inform the solution heavily.  The squared loss function above implies that the high budget organizations
+will be pulled the most towards the actual awards, while the smaller ones will be less affected. To the extent
+that a small non-profit is more sensitive to decreases of $1000 than a very large one, this is desirable.
+It also means that all scenarios look very similar for the largest categories and more different at the low end.
+
+We can also specify constraints at the low end to create several scenarios, and explore their impact on the
+final awards.
+
+
 
 
 ## Scenarios
@@ -164,20 +254,24 @@ scenario4 <-c(2500, 0.3696, 0.3696, 0.3696, 0.3696, 0.0346, 0.0051, 0.0051, 0)
 
 ```
 
+By applying extra constraints amond the $1 award, the micro category slope, and the category 1 slope, we can create a set of
+several different solutions:
   
 1. Scenario 1 
-  - 5% drop across board
-  - In this scenario, all Max Requests Awards are reduced by 5%.
-  - Because the awards are ultimately rescaled to the County budget, no impact on final awards or Percent Awarded.
-
+    - No additional constraints
+    - In this scenario, all Max Requests are reduced by 5%.
+    - Because the awards are ultimately rescaled to the County Funds, little impact on final awards or Percent Awarded.
 2. Scenario 2 
-  - 100% match for micro up to $7500, recalibrate
-
+    - $1 award is zero, different slopes above and below \$7500.
+    - 100% match for micro up to $7500, recalibrate
 3. Scenario 3 
-  - 75% match for micro up to $17500, recalibrate
-
+    - $1 award is zero, different slopes above and below \$17500.
+    - 50% match for micro up to $17500, recalibrate
 4. Scenario 4 
-  - \$2500 flat for micro up to $2500, recalibrate
+    - $1 award is \$2500, single slope for category 1.
+    - \$2500 flat for micro up to $2500, recalibrate
+
+We can evaluate these scenarios at various budget sizes. All scenarios look very similar for the high end, but can be quite different at the small end:
 
 ```{r ScenComp}
 b <- cumsum(basis(100*1000000))
@@ -188,11 +282,13 @@ kable(cbind(
   Scenario2= OGP.2013_forward(b, scenario2),
   Scenario3= OGP.2013_forward(b, scenario3),
   Scenario4= OGP.2013_forward(b, scenario4)
-), digits = -2, format.args=list(big.mark=',', scientific = FALSE), caption="Award Amounts") %>% column_spec(1, border_right = TRUE)
+), digits = -2, format.args=list(big.mark=',', scientific = FALSE), caption="Max Request Amounts") %>% column_spec(1, border_right = TRUE)
 
 ```
 
-```{r}
+
+
+```{r error=FALSE, warning=FALSE, fig.height=6, fig.width=8, fig.align="center", out.width="80%"}
 zzz <- data.frame(Budget=b,
 Current= OGP.2013_forward(b),
   Scenario1= OGP.2013_forward(b, scenario1),
@@ -202,19 +298,33 @@ Current= OGP.2013_forward(b),
 
 zzz_long <- melt(zzz, id.vars="Budget", variable.name="Scenario", value.name = "MaxAward")
 
-ggplot(zzz_long) + aes(x=Budget, y=MaxAward, color=Scenario) + geom_line() 
+ggplot(zzz_long) + aes(x=Budget, y=MaxAward, color=Scenario) + geom_line() +
+  geom_point(aes(x=Budget_Size), data=allocations, y=0, pch='x', color='black') + 
+  scale_y_continuous(name = "Max Request", limits = c(0,300000), labels = scales::dollar) + 
+  scale_x_continuous(name = "Budget", limits = c(1,100000000), labels = scales::dollar) +
+  ggtitle("Max Request by Budget")
 
 ```
 
-```{r}
-ggplot(zzz_long) + aes(x=Budget, y=MaxAward, color=Scenario) + geom_line() + xlim(1, 50000) + ylim(0, 30000) +
-  geom_point(aes(x=Budget_Size), data=allocations, y=0, pch='x', color='black')
+```{r error=FALSE, warning=FALSE, fig.height=6, fig.width=8, fig.align="center", out.width="80%"}
+# ggplot(zzz_long) + aes(x=Budget, y=MaxAward, color=Scenario) + geom_line(aes(linetype=Scenario != "Current"), size=1.5) + xlim(1, 50000) + ylim(0, 30000) +
+#   geom_point(aes(x=Budget_Size), data=allocations, y=0, pch='x', color='black') + guides(linetype="none") + ggtitle("OGP I Scenarios")
+
+
+ggplot(zzz_long) + aes(x=Budget, y=MaxAward, color=Scenario) + geom_line() +
+  geom_point(aes(x=Budget_Size), data=allocations, y=0, pch='x', color='black') + 
+  scale_y_continuous(name="Max Request", limits = c(0,30000), labels = scales::dollar) + 
+  scale_x_continuous(name="Budget", limits = c(1,50000), labels = scales::dollar) +
+  ggtitle("Max Request by Budget (Smaller categories)") + 
+  geom_abline(slope=1, intercept=0, linetype='dashed', alpha=.4)
 
 ```
 
+Scenarios 2,3, and 4 each intersect the current line, which means that within the smallest category, the max request max decrease, but above a certain point
+the max request will increase. This breakeven point is between \$7500 and $15000 depending on the scenario. The 100% funding line is overlaid as a dashed line;
+note that there are several organizations in the section where the current plan is greater, meaning that there max request is more than 100% of their budget.
 
-
-### Comparison by group
+## Comparison by final awards by group
 ```{r all_sec_counterfactual}
   Current  = Award(allocations$Budget_Size, OGP.2013_forward, allocations$ScorePercent, Year = allocations$Year, beta=NULL)
   Scenario1= Award(allocations$Budget_Size, OGP.2013_forward, allocations$ScorePercent, Year = allocations$Year, beta=scenario1)
@@ -231,6 +341,26 @@ ggplot(zzz_long) + aes(x=Budget, y=MaxAward, color=Scenario) + geom_line() + xli
   
 ```
 
+### Change in funding rate
+
+We can aggregate the last two years Scored Requests to see how it impacts the funding scale `p` - as per the constraints, it increases by around 5% of .4 (eg .02).
+
+```{r}
+kable(rbind.data.frame(
+  data.frame(Scenario="Current", `Total Scored Request` = sum(Current$Grant100), `Total Final Award`=sum(Current$Final), check.names = FALSE) %>% mutate(p=`Total Final Award` / `Total Scored Request`),
+data.frame(Scenario="Scenario1", `Total Scored Request` = sum(Scenario1$Grant100), `Total Final Award`=sum(Scenario1$Final), check.names = FALSE) %>% mutate(p=`Total Final Award` / `Total Scored Request`),
+data.frame(Scenario="Scenario2", `Total Scored Request` = sum(Scenario2$Grant100), `Total Final Award`=sum(Scenario2$Final), check.names = FALSE) %>% mutate(p=`Total Final Award` / `Total Scored Request`),
+data.frame(Scenario="Scenario3", `Total Scored Request` = sum(Scenario3$Grant100), `Total Final Award`=sum(Scenario3$Final), check.names = FALSE) %>% mutate(p=`Total Final Award` / `Total Scored Request`),
+data.frame(Scenario="Scenario4", `Total Scored Request` = sum(Scenario4$Grant100), `Total Final Award`=sum(Scenario4$Final), check.names = FALSE) %>% mutate(p=`Total Final Award` / `Total Scored Request`)
+) %>%   mutate(p=round(p,3), `Total Final Award` = NULL, `Total Scored Request` = round(`Total Scored Request`, -2)), 
+               format.args=list(big.mark=',')) 
+```
+
+### Comparison by final awards by group
+Additionally, we can look at the projected final awards for each group using historical data. Because each scenario was under the
+same set of group constraints to not deviate from the current by more than 5%, they all look fairly similar. This is still a useful
+check that the software is behaving correctly.
+
 
 #### District
 
@@ -244,7 +374,7 @@ d1 <-
               Scenario4.Final = sum(Scenario4.Final)
               ) 
 
-  kable(d1, digits = -2, format.args=list(big.mark=','), caption="Award Amounts by District")
+  kable(d1, digits = -2, format.args=list(big.mark=','), caption="Final Award Amounts by District")
 ```
 
 ```{r scen_disc_distr}
@@ -256,24 +386,23 @@ d1 %>% ungroup %>%
          Scenario4.Percent = 100* Scenario4.Final / sum(Scenario4.Final),
          Current.Final=NULL,	Scenario1.Final=NULL,	Scenario2.Final=NULL,	Scenario3.Final=NULL,	Scenario4.Final=NULL	
          ) %>% 
-    kable(digits = 2, format.args=list(big.mark=','), caption="Awards % by District")
+    kable(digits = 2, format.args=list(big.mark=','), caption="Final Awards % by District")
 
 ```
 
 
-#### OGP Budget Band
+#### Formula Category
 
 ```{r scen_ogp}
-d1 <- 
-  all_scenarios %>% group_by(OGP_Budget_Category) %>% 
+d1 <- all_scenarios %>% group_by(OGP_Budget_Category) %>% 
     summarize(Current.Final=sum(Current.Final),
               Scenario1.Final = sum(Scenario1.Final),
               Scenario2.Final = sum(Scenario2.Final),
               Scenario3.Final = sum(Scenario3.Final),
               Scenario4.Final = sum(Scenario4.Final)
-              ) 
+              )  %>% rename(`Formula Category`=OGP_Budget_Category)
 
-  kable(d1, digits = -2, format.args=list(big.mark=','), caption="Award Amounts by OGP_Budget_Category")
+  kable(d1, digits = -2, format.args=list(big.mark=','), caption="Final Award Amounts by Formula Category")
 ```
 
 ```{r scen_disc_ogp}
@@ -285,7 +414,7 @@ d1 %>% ungroup %>%
          Scenario4.Percent = 100* Scenario4.Final / sum(Scenario4.Final),
          Current.Final=NULL,	Scenario1.Final=NULL,	Scenario2.Final=NULL,	Scenario3.Final=NULL,	Scenario4.Final=NULL	
          ) %>% 
-    kable(digits = 2, format.args=list(big.mark=','), caption="Awards % by OGP_Budget_Category")
+    kable(digits = 2, format.args=list(big.mark=','), caption="Final Awards % by Formula Category")
 
 ```
 
@@ -302,7 +431,7 @@ d1 <-
               Scenario4.Final = sum(Scenario4.Final)
               ) 
 
-  kable(d1, digits = -2, format.args=list(big.mark=','), caption="Award Amounts by Discipline")
+  kable(d1, digits = -2, format.args=list(big.mark=','), caption="Final Award Amounts by Discipline")
 ```
 
 ```{r scen_disc_perc}
@@ -314,17 +443,21 @@ d1 %>% ungroup %>%
          Scenario4.Percent = 100* Scenario4.Final / sum(Scenario4.Final),
          Current.Final=NULL,	Scenario1.Final=NULL,	Scenario2.Final=NULL,	Scenario3.Final=NULL,	Scenario4.Final=NULL	
          ) %>% 
-    kable(digits = 2, format.args=list(big.mark=','), caption="Awards % by Discipline")
+    kable(digits = 2, format.args=list(big.mark=','), caption="Final Awards % by Discipline")
 
 ```
 
 #### Largest changes in each scenario
 
+For each scenario, we can find the 20 organizations that had the largest absolute or percent change. For scenarios with less than 40 entries, 
+there was an organization that was largest in both absolute *and* percent change. Generally speaking the largest organizations have the absolute
+changes while the small ones have the largest percent changes.
+
 ```{r}
 all_scenarios %>% mutate(Scenario=Scenario1.Final, delta=Scenario - Current.Final, percentChange= 100*(Scenario /Current.Final - 1)) %>% 
   arrange(-Budget_Size) %>% filter(rank(-abs(percentChange))< 20 | rank(-abs(delta))< 20 ) %>% 
  select(Organization, Budget_Size, Current.Final, Scenario, delta, percentChange) %>% 
-  kable(digits = 2, format.args=list(big.mark=','), caption="Largest Changes, Scenario1")
+  kable(digits = 2, format.args=list(big.mark=','), caption="Largest Changes in Final Awards, Scenario1")
 
 ```
   
@@ -361,12 +494,16 @@ all_scenarios %>% mutate(Scenario=Scenario4.Final, delta=Scenario - Current.Fina
 
 #### Total changes
 
-```{r}
+We can also aggregate the changes in final reward by whether it increased or not, and by how much:
+
+
+```{r deltatbl}
 zzz <- all_scenarios[c('Scenario1.Final','Scenario2.Final','Scenario3.Final','Scenario4.Final')] - all_scenarios$Current.Final
-zzz <- data.frame(Organization=all_scenarios$Organization, zzz)
+
+zzz <- data.frame(Organization=all_scenarios$Organization, OGP_Budget_Category=all_scenarios$OGP_Budget_Category, zzz)
 
 
-melt(zzz, "Organization") %>% 
+melt(zzz, c("Organization", "OGP_Budget_Category")) %>% 
   group_by(Scenario=sub(".Final", "", variable), 
            delta=ifelse(sign(value) > 0, '\\+', '\\-')
            ) %>% 
@@ -375,13 +512,38 @@ melt(zzz, "Organization") %>%
 
 ```
 
+```{r deltatbl2}
+
+melt(zzz, c("Organization", "OGP_Budget_Category")) %>% 
+  group_by(Scenario=sub(".Final", "", variable), 
+           `Formula Group`=OGP_Budget_Category,
+           delta=ifelse(sign(value) > 0, '\\+', '\\-')
+           ) %>% 
+  summarise(n=n(), avg=mean(value), min=min(value), med=median(value), max=max(value)) %>% 
+    kable( digits=0, caption="Types / Sizes of Changes by Formula Group",align='lccrrrrr') %>% 
+    row_spec(c(6:11, 18:23), background="lightgrey")
+
+```
   
-### Comments
+### Final Comments and Caveats
 
-  * All of the above scenarios can mixed - if it were desired to split the difference between Scenario 1 and 3, for example,
-    their coefficients can be averged.
-
-
+* All of the above scenarios can mixed - if it were desired to split the difference between Scenario 1 and 3, for example,
+    their coefficients can be averged; this would still satisfy all the group constraints previously described.
+* All of the above figures are based on historical data and the assumption that it is representative of the process moving 
+    forward. There are several reasons why this may not be the case:
+    * The increase in the standard deduction may disincentive smaller donations, reducing organization budgets and therefore
+        their max rewards.
+    * The turbulence in the stock market may impact organization endowments, reducing their organization budget.
+    * The Covid pandemic may mean that certain disciplines are adversely affected, especially live performances that
+        can't transition to online are canceled outright. The loss in ticket sales, among other things, reduces their budget.
+    * All of the above may drive new organizations to apply for grants, reducing the average award for renewals.
+    * Similarly, all of the above could cause organizations to close, increasing the average award for survivors.
+* Messaging around decreased awards should be handled delicately.
+    * For the largest organizations, this is a small percent of their award.
+    * For micro organizations, there is a clear path to higher awards:
+        * Increase fundraising such that budget is greater than $15,000 / year.
+    * For both categories, emphasize that higher scores are funded more, and that adopting best practices and following guidelines
+        will help. The extra dollar award per point on the review phase is at least 5% higher under all scenarios.
 
 
 # Integration with website
@@ -395,8 +557,7 @@ and contains more precision on the slopes than is listed on the OGP website. It 
 
 https://www.lacountyarts.org/funding/organizational-grant-program/ogp-grantseekers/apply/ogp-grantseekers-calculator-explained
 
-TODO - find contact person who can edit that file.
-
+When an appropriate plan is choosen, it will be straightforward to update the slopes in that module.
 
 ## Appendix A: R Package Notes
 
@@ -404,5 +565,7 @@ TODO - find contact person who can edit that file.
 
   1. Clone the github repo
   2. Place the OGP data files (Requests excel, awards pdf) in `data/`
-    a. If format has changed, modify the informat constants in `data/allocations.R`
+    a. If input formats have changed, modify the code in `data/allocations.R`
   3. Install the package using R
+  4. In R, knit this vignette (`ogp.Rmd`) to regenerate all plots and tables.
+  5. To recalibrate the scenarios, uncomment the appropriate lines and knit again.

@@ -173,7 +173,7 @@ ogp_summary_table <- function(data, g, caption=NULL, Year=19) {
     n=n(),
     `Total Budget`=sum(Budget_Size),
     `Total Max Request`=sum(Current.Grant100),
-    `Total HPA`=sum(Current.Awards),
+    `Total Scored Request`=sum(Current.Awards),
     `Total Awarded` = sum(Current.Final),
     ) %>%
       ungroup() %>%
