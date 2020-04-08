@@ -1,5 +1,5 @@
 ---
-title: "OGP 2020 Analysis Draft 2"
+title: "OGP 2020 Analysis Draft 3"
 author: "Neal Fultz <<neal@njnm.co>>"
 date: "4/2/2020"
 output: html_vignette
@@ -560,7 +560,51 @@ https://www.lacountyarts.org/funding/organizational-grant-program/ogp-grantseeke
 
 When an appropriate plan is chosen, it will be straightforward to update the slopes in that module.
 
-## Appendix A: R Package Notes
+## Scenario 1 Website collateral
+```{r comment=NA}
+s1s <- solveForBrackets(scenario1)
+cat(to_code(s1s))
+```
+
+```{r comment=NA}
+cat(to_text(s1s))
+```
+
+## Scenario 2 Website collateral
+```{r comment=NA}
+s2s <- solveForBrackets(scenario1)
+cat(to_code(s2s))
+```
+
+```{r comment=NA}
+cat(to_text(s2s))
+```
+
+
+
+## Scenario 3 Website collateral
+```{r comment=NA}
+s3s <- solveForBrackets(scenario1)
+cat(to_code(s3s))
+```
+
+```{r comment=NA}
+cat(to_text(s3s))
+```
+
+
+## Scenario 4 Website collateral
+```{r comment=NA}
+s4s <- solveForBrackets(scenario1)
+cat(to_code(s4s))
+```
+
+```{r comment=NA}
+cat(to_text(s4s))
+```
+
+
+# Appendix A: R Package Notes
 
 ### Installation
 

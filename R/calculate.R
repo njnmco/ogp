@@ -194,3 +194,79 @@ print.ogp_table <- function(x, ...) {
 
 `%||%` <- function(x,y) if(is.null(x)) y else x
 
+solveForBrackets <- function(scenario, categories=NULL) {
+
+  if(is.null(categories))
+      categories <-   c(0,        1,     7500, 17500, 50000, 100000, 1500000, 10000000, 40000000)
+
+  to_solve <- categories[categories > 0]
+
+  ret <- matrix(0, length(to_solve), 3)
+
+  i <- 1
+  for(ts in to_solve) {
+    ret[i, 1]   <- ts
+    ret[i, 2:3] <- solve(cbind(c(1,1), ts+c(0,10)), OGP.2013_forward(ts + c(0,10), beta = scenario))
+
+    i <- i +1
+  }
+
+  ret[, 2] <- round(ret[,2],-1)
+  ret[, 3] <- round(ret[,3], 6)
+  ret <- ret[!duplicated(ret[,-1]), ]
+
+  k <- nrow(ret)
+  ret[1:(k-1),1] <- ret[-1,1]
+  ret[k,1] <- 999999999 #1B
+  ret
+}
+
+
+
+to_code <- function(solution) {
+  fmt = "if (budgetSize < %10.0f) {\n          grant = %7.0f + %7.6f * budgetSize;\n      }"
+  conditions <- apply(solution, 1, function(s) {do.call(sprintf, c(list(fmt=fmt), s))})
+  conditions <- paste(conditions, collapse = "\n      else ")
+  fmt <- "
+ function calculateAndDisplay() {
+    var budgetSize = parseInt($('.budget-size').val(), 10);
+
+    if(budgetSize) {
+
+      var grant = 0;
+      %s
+
+      grant = numberWithCommas(Math.ceil(grant));
+
+      function numberWithCommas(x) {
+          return x.toString().replace(/\\B(?=(\\d{3})+(?!\\d))/g, ',');
+      }
+
+      // clear our any string we appended if user clicks button again
+      $('.max-grant-request').remove();
+
+      $('.calc-grant').append(\"<p class='max-grant-request'>YOUR MAXIMUM GRANT REQUEST IS: <span class='budget-size-result'>$\" + grant + '</span></p>');
+    }
+
+  }
+
+"  ;
+  sprintf(fmt, conditions)
+}
+
+
+to_text <- function(solution) {
+
+  fmt = "<li>For B < %s, X = %s + %5.4f * B</li>"
+  conditions <- apply(solution, 1, function(s) {do.call(sprintf,
+                                                        list(fmt=fmt,
+                                                              format(s[1], nsmall=0, digits=10, big.mark=',', scientific=FALSE),
+                                                              format(s[2], nsmall=0, digits=10, big.mark=',', scientific=FALSE),
+                                                             s[3]))
+    })
+  conditions <- paste(conditions, collapse = "\n")
+  conditions <- gsub("+ 0.0000 * B", "", conditions, fixed=TRUE)
+
+  conditions
+}
+
