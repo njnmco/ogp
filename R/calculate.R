@@ -145,6 +145,7 @@ scenario <- function(data,
   if(hasName(mod, "s")) s <- s * mod[["s"]]
   if(hasName(mod, "base")) u2[1] <- mod[["base"]]
   if(hasName(mod, "slopes")) u2[2:9] <- mod[["slopes"]] * u2[2:9]
+  method <- if(hasName(mod, "method"))  mod[["method"]] else "PFCF"
 
 
 
@@ -158,7 +159,7 @@ scenario <- function(data,
   sol <- LowRankQP(crossprod(X2) /s, crossprod(X2,Y) / s,
                    as.matrix(Amat2) /s, b_02 /s,
                    u=u2,
-                   verbose=verbose, niter=niter); #print(round(.Last.value$alpha[1:9] / sigma, 4));
+                   method=method, verbose=verbose, niter=niter); #print(round(.Last.value$alpha[1:9] / sigma, 4));
   round(sol$alpha[1:9] / sigma, 4)
 }
 
