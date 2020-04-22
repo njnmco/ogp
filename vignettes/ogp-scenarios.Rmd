@@ -1,5 +1,5 @@
 ---
-title: "OGP 2020 Additional Scenarios"
+title: "OGP 2020 Extra Scenarios"
 author: "Neal Fultz <<neal@njnm.co>>"
 date: "4/22/2020"
 output: html_vignette
@@ -196,9 +196,7 @@ scenario6b <- adjustFinalCategoryToConstraint(scenario6b, 200000)
 
 ```
 
-By applying extra constraints around the $1 award, the micro category slope, and the category 1 slope, we can create a set of
-several different solutions:
-  
+
 1. Scenario 5
     - No additional constraints
     - In this scenario, all Max Requests are reduced by 10%.
@@ -286,6 +284,8 @@ ggplot(zzz_long) + aes(x=Budget, y=MaxAward, color=Scenario) + geom_line() +
                           Scenario6=Scenario6, 
                           Scenario6a=Scenario6a, 
                           Scenario6b=Scenario6b)
+  
+  write.csv(all_scenarios, "~/extra_scenarios.csv")
   
 ```
 
