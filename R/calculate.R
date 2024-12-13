@@ -172,7 +172,7 @@ ogp_summary_table <- function(data, g, caption=NULL, Year=19) {
   caption = caption %||% as.character(get_expr(g))
   data %>% filter(Year %in% !!Year) %>% group_by(!!g) %>% summarise(
     n=n(),
-    `Total Budget`=sum(Budget_Size),
+    `Total Budget`=sum(BudgetSize),
     `Total Max Request`=sum(Current.Grant100),
     `Total Scored Request`=sum(Current.Awards),
     `Total Awarded` = sum(Current.Final),
@@ -192,8 +192,6 @@ print.ogp_table <- function(x, ...) {
     print.data.frame(x)
   }
 }
-
-`%||%` <- function(x,y) if(is.null(x)) y else x
 
 solveForBrackets <- function(scenario, categories=NULL) {
 

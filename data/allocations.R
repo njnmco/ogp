@@ -1,6 +1,177 @@
+library(tabulapdf)
+library(readxl)
+
 allocations <- NULL;
 
 local({
+  if(!grepl("/data$", getwd())) {
+    setwd("data")
+    on.exit(setwd(".."))
+  }
+
+  if(file.exists("allocations.RDS") && file.mtime("allocations.RDS") > file.mtime("allocations.R")) {
+    allocations <- readRDS("allocations.RDS")
+    return()
+  }
+
+
+  message("2425 sheet")
+
+  allocations2425 <- readxl::read_xlsx(
+    "Allocations - FY1920 to FY2425.xlsx",
+    skip = 1, sheet = "2425", n_max=238,
+    col_names =
+      c(
+        "EIN",
+        "Application ID",
+        "MODEL A",
+        "Budget Category",
+        "Score",
+        "ScorePercent",                                 #"Decimal Score",
+        "Score cutoff",
+        "Organization",                           #"Organization Legal Name", #RENAMING
+        "DBA (if different from legal name)",
+        "Main Office District",
+        "District of Programming",
+        "Districts Served",
+        "First-time Applicant",
+        "BudgetSize",                            #"Budget Size" ,
+        "Requested Amount",
+        "Fundable Request",
+        "% of Fundable Request",
+        "2nd Reduction",
+        "Rounded Award Amount",
+        "Previous Score",
+        "Previous Award",
+        "Award Year",
+        "Previous Budget Size",
+        "Budget Variance%",
+        "Award Variance #",
+        "Award Variance %",
+        "Score Variance %",
+        "NOTES",
+        "Decreased budget",
+        "Discipline",
+        "Brief Project Description",
+        "Project Category"
+
+
+
+      )
+  )
+
+  allocations2425 <- allocations2425[, c("Organization", "BudgetSize", "ScorePercent")]
+
+
+  message("2425 pdf")
+  if(!file.exists("2425.pdf")) {
+    message("downloading")
+    download.file("https://www.lacountyarts.org/sites/default/files/2024-07/2425_OGPGranteeList_0.pdf", "2425.pdf")
+  }
+
+  pg2425 <- tabulapdf::extract_tables("2425.pdf", method = "lattice", output="matrix") |>
+    lapply(function(x,body=x[-1,],hdr=x[1,]) `colnames<-`(body, hdr)) |>
+    do.call(what=rbind) |>
+    as.data.frame()
+
+  pg2425$`Grantee Name` <- gsub("\\r", " ", pg2425$`Grantee Name`)
+
+  pg2425 <- with(pg2425, data.frame(Organization=`Grantee Name`, Year='2425', City=City, Discipline=Discipline, District=`District of Most\rProgramming:`, OGPCat=`OGP\rBudget\rCategory`))
+
+  ###
+  stopifnot(all.equal(
+   sort(pg2425$Organization),
+   sort(allocations2425$Organization)
+  ))
+
+
+  ###
+  message("2324 sheet")
+
+
+  allocations2324 <- readxl::read_xlsx(
+    "Allocations - FY1920 to FY2425.xlsx",
+    skip = 1, sheet = "2324", n_max=237,
+    col_names = c(
+      'EIN',
+      'Application ID',
+      'MODEL A fiscal sponsorship',
+      'Budget Category',
+      'Score',
+      'ScorePercent',                                                    #'n',
+      'Score cutoff',
+      'Organization',                                                    #'Organization Legal Name',
+      'Popular Name or DBA (if different from legal name)',
+      'District where Main (Administrative/Office) is located:',
+      'District where most of your programming takes place:',
+      'District(s) organization serves (check all that apply):',
+      'First-time Applicant',
+      'BudgetSize',#                                                              'Budget Size',
+      'Requested Amount:',
+      'Fundable Request:',
+      'Discipline',
+      'Brief Project Description',
+      'Project Category',
+      '% of Fundable Request',
+      '2nd Reduction',
+      'Rounded Award Amount',
+      'Previous Score',
+      'Previous Award',
+      'Award Year',
+      'Previous Budget Size',
+      'Budget Variance%',
+      'Award Variance (Decrease) %',
+      'Score Variance (Decrease) %',
+      'NOTES',
+      'Decreased budget'
+    )
+  )
+
+  allocations2324 <- allocations2324[, c("Organization", "BudgetSize", "ScorePercent")]
+
+
+
+  message("2324 pdf")
+  if(!file.exists("2324.pdf")) {
+    message("downloading")
+    download.file("https://www.lacountyarts.org/sites/default/files/2023-07/2324OGP-Grantees.pdf", "2324.pdf")
+  }
+
+  pg2324 <- tabulapdf::extract_tables("2324.pdf", method = "lattice", output="matrix") |>
+    lapply(function(x,body=x[-1,],hdr=x[1,]) `colnames<-`(body, hdr)) |>
+    do.call(what=rbind) |>
+    as.data.frame()
+
+  pg2324$`Grantee Name` <- gsub("\\r", " ", pg2324$`Grantee Name`)
+
+  pg2324 <- with(pg2324, data.frame(Organization=`Grantee Name`, Year='2324', City=City, Discipline=Discipline, District=`District of Most\rProgramming:`, OGPCat=paste("OGP", `OGP Budget\rCategory`)))
+
+
+  ## Fixes
+
+  allocations2324 <- allocations2324[-grep('Wallis Annenberg Center for the Performing Arts', allocations2324$Organization), ]
+
+  ###
+  stopifnot(all.equal(
+    sort(pg2324$Organization),
+    sort(allocations2324$Organization)
+  ))
+
+
+  ####
+
+  allocations <<- rbind(
+    merge(allocations2425, pg2425),
+    merge(allocations2324, pg2324)
+  )
+
+})
+
+
+
+
+### Legacy Code for 2020 build #################################################
+(function(x){0})({
 
   message("2019 sheet")
 
@@ -46,7 +217,6 @@ local({
   allocations$District_Most_Activity <- as.factor(allocations$District_Most_Activity)
 
   message("2019 pdf")
-
 
   tbl <- tabulizer::extract_tables("ogp_1920_list_of_grantees_for_web.pdf")
   nms <- setNames(nm=tbl[[1]][1,])
@@ -194,5 +364,5 @@ local({
 
 
   allocations <<- rbind(allocations19, allocations18)
-
+  saveRDS(allocations, "allocations.RDS")
 })

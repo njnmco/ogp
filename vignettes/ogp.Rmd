@@ -1,7 +1,7 @@
 ---
-title: "OGP 2020 Analysis Draft 3"
+title: "OGP 2024 Analysis Draft 1"
 author: "Neal Fultz <<neal@njnm.co>>"
-date: "4/2/2020"
+date: "12/13/2024"
 output: html_vignette
 vignette: >
   %\VignetteIndexEntry{OGP 2020 Analysis}
@@ -17,7 +17,7 @@ knitr::opts_chunk$set(echo=FALSE)
 if(! "Current.Awards" %in% colnames(allocations)) {
   allocations <- cbind(
     allocations,
-    Current = Award(allocations$Budget_Size, OGP.2013_forward, allocations$ScorePercent, Year = allocations$Year)
+    Current = Award(allocations$BudgetSize, OGP.2013_forward, allocations$ScorePercent, Year = allocations$Year)
   )
 }
 
@@ -104,8 +104,8 @@ resulting in p decreasing from near 100% to less than 50%.
 ## Data Dimensions
 
 Historical awards are published on the OGP website, which we can analyze to gain some insight into 
-the current trends. Because the OGP program is a two-year award, we have aggregated the 2018-2019 and
-2019-2020 cohorts.
+the current trends. Because the OGP program is a two-year award, we have aggregated the 2023-2024 and
+2024-2025 cohorts.
 
 Each grantee is categorized in several ways:
 
@@ -125,12 +125,12 @@ are recalculated from the source data, and may be rounded slightly differently.]
 ### Location
 
 ```{r CityTbl}
-ogp_summary_table(allocations, City, "2018 + 2019 OGP Budget By City", Year = 18:19)
+ogp_summary_table(allocations, City, "2023/4 + 2024/5 OGP Budget By City", Year = c('2324', '2425'))
 ```
 
 ```{r}
-ogp_summary_table(allocations, District_Most_Activity, "2018 + 2019 OGP Budget By District of Most Activity", Year = 18:19) %>%
-  arrange(District_Most_Activity)
+ogp_summary_table(allocations, District, "2023/4 + 2024/5 OGP Budget By District of Most Activity", Year = c("2324","2425")) %>%
+  arrange(District)
 
 ```
 
