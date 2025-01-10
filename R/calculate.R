@@ -33,6 +33,39 @@ OGP.2013 <- function(B) {
   #alpha[category] + beta[category] * B
 }
 
+OGP.2020 <- function(B) {
+
+  # from https://www.lacountyarts.org/sites/default/files/js/js_pa6EhFUALtJQlWo5Qj-7Gs4y5d9vTSerRl4vDyFWoVE.js
+
+  Vectorize(function(budgetSize){
+    if (budgetSize < 7500) {
+      grant =      -0 + 1.000000 * budgetSize;
+    }
+    else if (budgetSize < 100000) {
+      grant =    5080 + 0.323000 * budgetSize;
+    }
+    else if (budgetSize < 1500000) {
+      grant =   33190 + 0.041900 * budgetSize;
+    }
+    else if (budgetSize < 40000000) {
+      grant =   90040 + 0.003999 * budgetSize;
+    }
+    else if (budgetSize < 999999999) {
+      grant =  250000 + 0.000000 * budgetSize;
+    }
+    grant
+  })(B)
+  #category <- cut(B, OGP_CATEGORIES, FALSE)
+
+  #alpha <- c(7500, 606, 36250, 84415.58, 300000)
+  #beta  <- c(0, .3939, .0375, .0054, 0)
+
+  #alpha[category] + beta[category] * B
+}
+
+
+
+
 basis <- function(B, categories=NULL) {
 
   if(is.null(categories)) {
@@ -55,7 +88,21 @@ OGP.2013_forward <- function(B, beta=NULL) {
     beta       <-   c(7500,     0,        0,    c1,    c1,  .0375,      c2,       c2,        0)
   }
 
-  drop(basis(B) %*% beta)
+  drop(basis(B, categories = categories) %*% beta)
+}
+
+OGP.2020_forward <- function(B, beta=NULL) {
+
+  if(is.null(beta)) {
+    c1 <- 1
+    c2 <- 0.323000
+    c3 <- 0.041900
+    c4 <- 0.003999
+    categories <-   c(0,        1,     7500, 17500, 50000, 100000, 1500000, 10000000, 40000000)
+    beta       <-   c(c1,        c1,      c2,    c2,    c2,     c3,      c4,       c4,        0)
+  }
+
+  drop(basis(B, categories = categories) %*% beta)
 }
 
 
