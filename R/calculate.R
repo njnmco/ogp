@@ -91,24 +91,27 @@ OGP.2013_forward <- function(B, beta=NULL) {
   drop(basis(B, categories = categories) %*% beta)
 }
 
-OGP.2020_forward <- function(B, beta=NULL) {
+OGP.2020_forward <- function(B, beta=NULL, categories=NULL) {
 
   if(is.null(beta)) {
     c1 <- 1
     c2 <- 0.323000
     c3 <- 0.041900
     c4 <- 0.003999
-    categories <-   c(0,        1,     7500, 17500, 50000, 100000, 1500000, 10000000, 40000000)
     beta       <-   c(c1,        c1,      c2,    c2,    c2,     c3,      c4,       c4,        0)
+  }
+
+  if(is.null(categories)) {
+    categories <-   c(0,        1,     7500, 17500, 50000, 100000, 1500000, 10000000, 40000000)
   }
 
   drop(basis(B, categories = categories) %*% beta)
 }
 
 
-Award <- function(Budget, Grant100Formula, Scores, TotalBudget=4500000, Year=1, beta=NULL, ...) {
+Award <- function(Budget, Grant100Formula, Scores, TotalBudget=4500000, Year=1, beta=NULL, categories=NULL, ...) {
 
-  Grant100 <- Grant100Formula(Budget, beta=beta)
+  Grant100 <- Grant100Formula(Budget, beta=beta, categories=categories)
   Awards   <-  Grant100 * Scores
   mod      <- TotalBudget / ave(Awards, Year, FUN=sum)
 
@@ -117,10 +120,10 @@ Award <- function(Budget, Grant100Formula, Scores, TotalBudget=4500000, Year=1, 
   structure(data.frame(..., Grant100, Awards, Final), mod=mod)
 }
 
-make_group_constraint <- function(B, group, b_0=B, dropZeros=TRUE) {
+make_group_constraint <- function(B, group, b_0=B, dropZeros=TRUE, categories=NULL) {
 
   g <- fac2sparse(as.factor(group))
-  Amat <- g %*% basis(B)
+  Amat <- g %*% basis(B, categories=categories)
   b_0 <- g %*% b_0
 
   if(dropZeros) {
@@ -138,7 +141,7 @@ scenario <- function(data,
                        B = data$Budget_Size,
                        Y = data$Current.Final,
                        Y_low = .95 * data$Current.Grant100,
-                       groups_const = c("City", "District_Most_Activity", "Discipline", "OGP_Budget_Category"),
+                       groups_const = c("City", "District", "Discipline", "OGPCat"),
                        mod=NULL, verbose=FALSE, niter=100
                      ) {
 
@@ -146,6 +149,7 @@ scenario <- function(data,
 
   if(is.character(B)) B <- data[[B]]
   if(is.character(Y)) Y <- data[[Y]]
+  if(is.character(Y_low)) Y_low <- data[[Y_low]]
 
   X <- basis(B)
   Y <- Y
@@ -211,8 +215,67 @@ scenario <- function(data,
 }
 
 
+scenario2 <- function(data,
+                     B = data$Budget_Size,
+                     Y = data$Current.Final,
+                     Y_low = .95 * data$Current.Grant100,
+                     groups_const = c("City", "District", "Discipline", "OGPCat"),
+                     mod=NULL, verbose=FALSE, niter=100,
+                     categories=NULL
+) {
 
-##############################################################################################
+  stopifnot(all(groups_const %in% colnames(data)))
+
+  if(is.character(B)) B <- data[[B]]
+  if(is.character(Y)) Y <- data[[Y]]
+  if(is.character(Y_low)) Y_low <- data[[Y_low]]
+
+  X <- basis(B, categories = categories)
+  Y <- Y
+
+  g_consts_l <- lapply(data[groups_const], make_group_constraint, B=B, b_0=Y_low, categories=categories)
+  Amat <- as.matrix(do.call(rbind, lapply(g_consts_l, `[[`, "Amat")))
+  b_0 <- Reduce(c, lapply(g_consts_l, `[[`, "b_0"))
+
+  # Remove Constraints from single org (ie sum of intercepts =1)
+  i <- Amat[,1] > 1
+  Amat <- Amat[i, ]
+  b_0 <- b_0[i]
+
+  k_cats <- ncol(X)+1 # final column is the LHS
+
+  if(hasName(mod, "extra_inq")) {
+    Amat <- rbind(Amat, mod$extra_inq[,-k_cats])
+    b_0 <- c(b_0, mod$extra_inq[,k_cats])
+  }
+
+  #k_ineq <- nrow(Amat)
+  meq = 0
+
+  if(hasName(mod, "extra_eq")) {
+    meq = nrow(mod$extra_eq)
+
+    Amat <- rbind(mod$extra_eq[,-k_cats], Amat)
+    b_0 <- c(mod$extra_eq[,k_cats], b_0)
+  }
+
+
+  ### Rescale to 0:1
+  sigma <- basis(max(B), categories = categories)[1,]
+  X    <- X %*% diag(1/sigma)
+  Amat <- Amat %*% diag(1/sigma)
+
+
+
+
+  sol <- solve.QP(crossprod(X), crossprod(X,Y), t(Amat), b_0, meq=meq)
+
+  round(sol$solution / sigma, 4)
+}
+
+
+
+# Pretty Printing for Report #####
 
 ogp_summary_table <- function(data, g, caption=NULL, Year=19) {
   g <- enquo(g)
@@ -231,7 +294,7 @@ ogp_summary_table <- function(data, g, caption=NULL, Year=19) {
 }
 
 print.ogp_table <- function(x, ...) {
-  if( length(knitr::opts_current$get()) > 0) {
+  if( isTRUE(getOption('knitr.in.progress'))) {
     knitr::kable(x,  digits = 2, format.args=list(big.mark=','), caption = attr(x, "caption")) %>%
       kableExtra::column_spec(1, width="10em") %>%
       knitr::knit_print()
@@ -239,6 +302,8 @@ print.ogp_table <- function(x, ...) {
     print.data.frame(x)
   }
 }
+
+# WWW/JS Generation #####
 
 solveForBrackets <- function(scenario, categories=NULL) {
 

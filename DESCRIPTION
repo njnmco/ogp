@@ -17,6 +17,7 @@ Depends:
   rmarkdown,
   LowRankQP,
   Matrix,
+  quadprog,
   rlang,
   reshape2,
   kableExtra
