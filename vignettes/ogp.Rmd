@@ -17,7 +17,7 @@ knitr::opts_chunk$set(echo=FALSE)
 if(! "Current.Awards" %in% colnames(allocations)) {
   allocations <- cbind(
     allocations,
-    Current = Award(allocations$BudgetSize, OGP.2013_forward, allocations$ScorePercent, Year = allocations$Year)
+    Current = Award(allocations$BudgetSize, OGP.2020_forward, allocations$ScorePercent, Year = allocations$Year)
   )
 }
 
@@ -26,22 +26,25 @@ if(! "Current.Awards" %in% colnames(allocations)) {
 
 ## Executive Summary
 
-LA County provides $4.5m dollars in support to arts nonprofits each year through it's Organizational Grant 
+LA County provides $5m+ dollars in support to arts nonprofits each year through it's Organizational Grant 
 Program, run by the Department of Arts and Culture. This program is unique in that it provides funds for
 nonprofits for access, capacity, infrastructure and growth, which are typically out-of-scope for other grants. 
 
 The Department of Arts and Culture computes each organization's award using a formula that
 accounts for the organization's size, its score by a review panel, and the total amount of funds available.
-This formula was last calibrated in 2013. Since then, through a combinations of high renewal rates, increased
-number of new applicants, and non-profit growth, the estimate provided to non-profits is now off by nearly 50%.
+This formula was last calibrated in 2020. Since then, factors including growth in applications
+and inflation have decreased the power of the grants, but LA County has increased the total 
+budget to compensate.
 
 Here, we develop a methodology for recalibrating the formula given a set of constraints, and investigate 
-four feasible scenarios to determine which is best to move forward with:
+several initial scenarios to determine which is best to move forward with:
 
-* 5% reduction across board
-* 100% match up to $7500 + recalibrate
-* 50%  match up to $17500 + recalibrate
-* $2500 intercept + recalibrate 
+* Increase Budget +$1.1m + recalibrate
+* Increase Budget +$1.1m + increase brackets by inflation + recalibrate
+* Increase Budget +$1.1m + increase rates by inflation + recalibrate
+* Increase Budget +$1.1m + increase brackets and rates by inflation + recalibrate
+* Increase Budget +$1.1m + Drop OGP3 bracket + recalibrate
+
 
 ## Guiding Principles
 
@@ -58,7 +61,7 @@ The original project outlined several key goals in developing the funding formul
 > The solution need not take into account the current OGP categories
 ```
 
-This 2020 update takes the following modifications to the guidelines:
+This 2025 update takes the following modifications to the guidelines:
 
   * Current formula categories should not change "too much" (TBD)
     * Number of categories
@@ -70,9 +73,8 @@ This 2020 update takes the following modifications to the guidelines:
     
 Secondary goals:  
 
-  * Reduce the "$1 budget" minimum payout as much as is feasible
-    * With special care given to organizations that received more than 100% of budget previously (*"over-funded"*)
-  * Reduce the "$100M" budget maximum payout as much as is feasible
+  * Adjust for changes in utilization
+  * Adjust for inflation
   * Subject to the above constraints
   
 ## Award Methodology
@@ -137,12 +139,11 @@ ogp_summary_table(allocations, District, "2023/4 + 2024/5 OGP Budget By District
 ## Discipline
 
 ```{r}
-ogp_summary_table(allocations, Discipline, "2018 + 2019 OGP Budget By Discipline", Year = 18:19)
+ogp_summary_table(allocations, Discipline, "2023/4 + 2024/5 OGP Budget By Discipline", Year = c("2324","2425")) |>
+  arrange(Discipline)
 ```
 
 ## Project Objective
-
-__Data not available__ - but to the extent that the review committees consider this as a factor in an applicants score, it's worth mentioning. 
 
 Sustainability
 : Provides support for existing artistic and/or administrative projects that help to sustain the mission and goals of arts organizations.
@@ -157,6 +158,12 @@ Accessibility
 : Provides support for new or existing projects that provide public access to arts activities and programs.
 
 
+```{r}
+ogp_summary_table(allocations, Objective, "2023/4 + 2024/5 OGP Budget By Objective", Year = c("2324","2425")) |>
+  arrange(Objective)
+```
+
+
 ### Formula Category
 
 In 2013, the formula introduced several categories based on applicant budget size:
@@ -168,14 +175,15 @@ In 2013, the formula introduced several categories based on applicant budget siz
   
 These categories were chosen with domain knowledge, roughly corresponding to S, M, L and XL non-profits. The 2013 formula
 also included two features worth noting: the XL category was awarded a flat amount of $300k, and the S category had a minimum
-award of $7500 (conceptually an organization with only $1 of budget could qualify). Although there were no "micro-non-profits" 
-when the formula was created, there are now several applicants whose max request is 200-400% of their annual budget because of 
-this feature.
+award of $7500 (conceptually an organization with only $1 of budget could qualify). 
+
+In 2020, the funding formula was further modified, but these original categories are 
+still useful for describing and reporting the data.
   
 
 ```{r }
-ogp_summary_table(allocations, OGP_Budget_Category, "2018 + 2019 OGP Budget By Formula Category", Year=18:19) %>% 
-  arrange(OGP_Budget_Category) %>% rename(`Formula Category`=OGP_Budget_Category)
+ogp_summary_table(allocations, OGPCat, "2023/4 + 2024/5 OGP Budget By Formula Category", Year=c("2324","2425")) %>% 
+  arrange(OGPCat) %>% rename(`Formula Category`=OGPCat)
 ```
 
 ## Recalibration Methodology
@@ -184,18 +192,14 @@ The scoring and County Funds process is outside the control and scope of this pr
 on finding a new Max Request formula that matches closely the final awards that were actually awarded.
 This newly calibrated formula must obey a set of constraints, chiefly that no group of the above
 categories (City, District, Discipline, Funding Category) should decrease in total funds by more than 5%.
-5% was chosen by domain knowledge as an estimate of the 2-year change in the County Funding rate,
-which incorporates the typical growth among renewals and the typical number of new applicants. 
+5% was initially chosen by domain knowledge as an estimate of the 2-year change in the County Funding rate,
+which incorporates the typical growth among renewals and the typical number of new applicants,
+although in the immediate years following the 2020 COVID19 Pandemic, it was flatter than expected.
 
-If we were starting from scratch, Isotonic Regression ^[See de Leeuw 2009, for instance] could be a 
-useful and appropriate tool. However, it does have the tendency to create large, flat regions, which
-could be regressive (in the economics sense of the word). Additionally, most IR software does not
-allow the specification of additional constraints.
-
-Instead, we can use the existing groups and only find new slopes using Quadratic Programming. Quadratic
+We can explore alternative groups and find new slopes using Quadratic Programming. Quadratic
 Programming will minimize the (squared) distance between the new funding curve and the actual awards,
 subject to a set of constraints. ^[There are several free packages for QP: `quadprog`, `ipoptr` and `LowRankQP`
-are all quite good, and have different sets of features. We used `LowRankQP`]. Care must be taken with
+are all quite good, and have different sets of features. We used `quadprog` this time]. Care must be taken with
 scaling awards, because the range (max - min) of budgets is nearly $100M dollars; this can and does 
 cause precision issues in the software.
 
@@ -213,53 +217,143 @@ final awards.
 
 ## Scenarios
 
-```{r scenarios}
-# Scenario 1 - 5% flat reduction
-#scenario1 <- scenario(allocations); .Last.value
-scenario1 <- c(7125, 0, 0, 0.3742, 0.3742, 0.0356, 0.0051, 0.0051, 0)
+```{r scenarios, results='hide'}
+
+####
+# * Increase Budget +$1.1m + recalibrate
+# * Increase Budget +$1.1m + increase brackets by inflation + recalibrate
+# * Increase Budget +$1.1m + increase rates by inflation + recalibrate
+# * Increase Budget +$1.1m + increase brackets and rates by inflation + recalibrate
+# * Increase Budget +$1.1m + Drop OGP3 bracket + recalibrate
+
+
+scenario.allocations <- allocations %>% 
+  filter(Year %in% c("2324", "2425"))
+
+# Scenario1 - increase budget -nb this can't be implemented as extra constraint :(
+
+scenario1.allocations <-cbind(
+  scenario.allocations, 
+  scenario1 = with(scenario.allocations, 
+                     Award(BudgetSize, OGP.2020_forward, ScorePercent, TotalBudget=4.5e6 + 1.1e6, Year = Year))
+)
+
+categories <-   c(0, 7500, 100000, 1500000, 40000000)
 
 
 
-### Scenario 2 - 100% match for micro up to $7500, recalibrate
-eq23 <- matrix(ncol=10, byrow=TRUE, c(
-0, 0, -1,  1, 0, 0, 0, 0, 0,   0,
-0, 0, -1,  0, 1, 0, 0, 0, 0,   0,
-0, 0,  0,  0, 0, 0, 1,-1, 0,   0,  
-0, 0,  0,  0, 0, 0, 0, 0,-1,   0  
+scenario1.constraints <- matrix(ncol=5+1, byrow = TRUE, data=c(
+  1,     0,     0,    0,    0,    1 #100% match
 ))
-#scenario2 <- scenario(allocations, mod=list(base=100, extra_eq=eq23, s=.3),  niter=55); .Last.value
-scenario2 <- c(0, 1, 0.3525, 0.3525, 0.3525, 0.0345, 0.0051, 0.0051, 0)
 
-
-### Scenario 3 - 50% match for micro up to $17500, recalibrate
-eq12 <- matrix(ncol=10, byrow=TRUE, c(
-0, -1, 1,  0, 0, 0, 0, 0, 0, 0,
-0, 0,  0,  -1, 1, 0, 0, 0, 0, 0,
-0, 0,  0,  0, 0, 0, 1,-1, 0,   0,  
-0, 0,  0,  0, 0, 0, 0, 0,-1,   0  
+scenario1.ineq <- matrix(ncol=5+1, byrow = TRUE, data=c(
+  1,    -1,     0,    0,    0,    0, 
+  0,     1,    -1,    0,    0,    0, 
+  0,     0,     1,   -1,    0,    0, 
+  0,     0,     0,    1,   -1,    0, 
+  0,     0,     0,    0,    1,    0
 ))
-#scenario3 <- scenario(allocations, mod=list(base=100, extra_eq=eq12), niter=53); .Last.value
-scenario3 <- c(0, 0.50, 0.50, 0.3762, 0.3762, 0.034, 0.0051, 0.0051, 0)
 
-### Scenario 4 - $2500 flat for micro up to $2500, recalibrate
-eq123 <- matrix(ncol=10, byrow=TRUE, c(
-0, 1, -1,  0, 0, 0, 0, 0, 0, 0,  
-0, 1,  0, -1, 0, 0, 0, 0, 0, 0,
-0, 1,  0, -0,-1, 0, 0, 0, 0, 0,
-0, 0,  0,  0, 0, 0, 1,-1, 0,   0,  
-0, 0,  0,  0, 0, 0, 0, 0,-1,   0  
-))
-#scenario4 <- scenario(allocations, mod=list(base=2500, extra_eq=eq123), niter=47); .Last.value
-scenario4 <-c(2500, 0.3696, 0.3696, 0.3696, 0.3696, 0.0346, 0.0051, 0.0051, 0)
+
+scenario1.a <- scenario2(data = scenario1.allocations,
+                      B = "BudgetSize",
+                      Y = "scenario1.Final",
+                      Y_low = "Current.Awards",
+                      mod=list(extra_eq=scenario1.constraints, extra_inq=scenario1.ineq),
+                      categories = categories); .Last.value
+
+scenario1.a <- c(1, 0.2995, 0.0387, 0.0035, 2e-04) *c(1,1,1,1,0)
+
+cbind(categories, scenario1.a, basis(categories, categories) %*% scenario1.a, OGP.2020(categories))
+
+### Scenario2 - shift brackets
+
+# Consumer Price Index for All Urban Consumers (CPI-U)
+# 
+# Series Id:	CUURS49ASA0
+# Not Seasonally Adjusted
+# Series Title:	All items in Los Angeles-Long Beach-Anaheim, CA, all urban consumers, not seasonally adjusted
+# Area:	Los Angeles-Long Beach-Anaheim, CA
+# Item:	All items
+# Base Period:	1982-84=100
+# Using Half1
+
+CPI_2020 <- 277.303
+CPI_2024 <- 330.571
+
+#round(categories *  CPI_2024 / CPI_2020, -3); dput(.Last.value)
+categories_infl <- c(0, 9000, 119000, 1788000, 47684000)
+
+
+scenario2.a <- scenario2(data = scenario1.allocations,
+                      B = "BudgetSize",
+                      Y = "scenario1.Final",
+                      Y_low = "Current.Awards",
+                      mod=list(extra_eq=scenario1.constraints),
+                      categories = categories_infl); .Last.value
+
+scenario2.a <- c(1, 0.2858, 0.0303, 0.0032, 1e-04) * c(1, 1, 1, 1, 0)
+
+
+cbind(categories_infl, scenario2.a, basis(categories_infl, categories_infl) %*% scenario2.a, OGP.2020(categories_infl))
+
+
+### Scenario3 Increase rates only
+
+scenario3.a <- scenario2(data = scenario1.allocations,
+                      B = "BudgetSize",
+                      Y = "scenario1.Final",
+                      Y_low = scenario1.allocations$Current.Awards * CPI_2024 / CPI_2020,
+                      mod=list(extra_eq=scenario1.constraints, extra_inq=scenario1.ineq),
+                      categories = categories); .Last.value
+
+
+scenario3.a <- c(1, 0.3755, 0.046, 0.0041, 3e-04) * c(1, 1, 1, 1, 0)
+
+
+cbind(categories, scenario3.a, basis(categories, categories) %*% scenario3.a, OGP.2020(categories))
+
+
+# Scenario 4 / # * Increase Budget +$1.1m + increase brackets and rates by inflation + recalibrate
+
+scenario4.a <- scenario2(data = scenario1.allocations,
+                      B = "BudgetSize",
+                      Y = "scenario1.Final",
+                      Y_low = scenario1.allocations$Current.Awards * CPI_2024 / CPI_2020,
+                      mod=list(extra_eq=scenario1.constraints),
+                      categories = categories_infl); .Last.value
+
+scenario4.a <-c(1, 0.3633, 0.0355, 0.0039, 2e-04) * c(1, 1, 1, 1, 0)
+
+cbind(categories_infl, scenario4.a, basis(categories_infl, categories_infl) %*% scenario4.a, OGP.2020(categories_infl))
+
+#scenario 5 / Combine OGP3 and 4
+
+scenario5.categories <-   c(0, 17500, 100000, 1500000, 50e6)
+
+scenario5.a <- scenario2(data = scenario1.allocations,
+                      B = "BudgetSize",
+                      Y = "scenario1.Final",
+                      Y_low = "Current.Awards",
+                      mod=list(extra_eq=scenario1.constraints),
+                      categories = scenario5.categories); .Last.value
+
+scenario5.a <- c(1, 0.2037, 0.0397, 0.0032, 1e-04) *  c(1, 1, 1, 1, 0)
+
+cbind(scenario5.categories, scenario5.a, basis(scenario5.categories, scenario5.categories) %*% scenario5.a, OGP.2020(scenario5.categories))
+
+
 
 
 ```
 
-By applying extra constraints around the $1 award, the micro category slope, and the category 1 slope, we can create a set of
-several different solutions:
+By applying different constraints on the micro category, and the category 1 slope, and different inflation adjustments,
+we can create a set of several different solutions. 
+
+TODO!!!
   
-1. Scenario 1 
-    - No additional constraints
+1. Scenario 1: Budget Increase +$1.1m
+    - 100% match for micro (<$7500)
     - In this scenario, all Max Requests are reduced by 5%.
     - Because the awards are ultimately rescaled to the County Funds, little impact on final awards or Percent Awarded.
 2. Scenario 2 
@@ -272,17 +366,21 @@ several different solutions:
     - $1 award is \$2500, single slope for category 1.
     - \$2500 flat for micro up to $2500, recalibrate
 
+
+TODO!!!
+
 We can evaluate these scenarios at various budget sizes. All scenarios look very similar for the high end, but can be quite different at the small end:
 
 ```{r ScenComp}
-b <- cumsum(basis(100*1000000))
+b <- Reduce(union, c(categories, categories_infl, scenario5.categories)) |> sort() |> setdiff(0)
 kable(cbind(
-  Budget = b, 
-  Current= OGP.2013_forward(b),
-  Scenario1= OGP.2013_forward(b, scenario1),
-  Scenario2= OGP.2013_forward(b, scenario2),
-  Scenario3= OGP.2013_forward(b, scenario3),
-  Scenario4= OGP.2013_forward(b, scenario4)
+  Budget  = b, 
+  Baseline = OGP.2020_forward(b),
+  Scenario1= OGP.2020_forward(b, scenario1.a, categories),
+  Scenario2= OGP.2020_forward(b, scenario2.a, categories_infl),
+  Scenario3= OGP.2020_forward(b, scenario3.a, categories),
+  Scenario4= OGP.2020_forward(b, scenario4.a, categories_infl),
+  Scenario5= OGP.2020_forward(b, scenario4.a, scenario5.categories)
 ), digits = -2, format.args=list(big.mark=',', scientific = FALSE), caption="Max Request Amounts") %>% column_spec(1, border_right = TRUE)
 
 ```
@@ -290,19 +388,22 @@ kable(cbind(
 
 
 ```{r error=FALSE, warning=FALSE, fig.height=6, fig.width=8, fig.align="center", out.width="80%"}
-zzz <- data.frame(Budget=b,
-Current= OGP.2013_forward(b),
-  Scenario1= OGP.2013_forward(b, scenario1),
-  Scenario2= OGP.2013_forward(b, scenario2),
-  Scenario3= OGP.2013_forward(b, scenario3),
-  Scenario4= OGP.2013_forward(b, scenario4))
+b <- unique(c(0, b, max(allocations$BudgetSize)))
+zzz <- data.frame(Budget=b, 
+  Current = OGP.2020_forward(b),
+  Scenario1= OGP.2020_forward(b, scenario1.a, categories),
+  Scenario2= OGP.2020_forward(b, scenario2.a, categories_infl),
+  Scenario3= OGP.2020_forward(b, scenario3.a, categories),
+  Scenario4= OGP.2020_forward(b, scenario4.a, categories_infl),
+  Scenario5= OGP.2020_forward(b, scenario4.a, scenario5.categories)
+)
 
 zzz_long <- melt(zzz, id.vars="Budget", variable.name="Scenario", value.name = "MaxAward")
 
 ggplot(zzz_long) + aes(x=Budget, y=MaxAward, color=Scenario) + geom_line() +
-  geom_point(aes(x=Budget_Size), data=allocations, y=0, pch='x', color='black') + 
-  scale_y_continuous(name = "Max Request", limits = c(0,300000), labels = scales::dollar) + 
-  scale_x_continuous(name = "Budget", limits = c(1,100000000), labels = scales::dollar) +
+  geom_point(aes(x=BudgetSize), data=allocations, y=0, pch='x', color='black') + 
+  scale_y_continuous(name = "Max Request",  labels = scales::dollar) + 
+  scale_x_continuous(name = "Budget",  labels = scales::dollar) +
   ggtitle("Max Request by Budget")
 
 ```
@@ -312,34 +413,41 @@ ggplot(zzz_long) + aes(x=Budget, y=MaxAward, color=Scenario) + geom_line() +
 #   geom_point(aes(x=Budget_Size), data=allocations, y=0, pch='x', color='black') + guides(linetype="none") + ggtitle("OGP I Scenarios")
 
 
-ggplot(zzz_long) + aes(x=Budget, y=MaxAward, color=Scenario) + geom_line() +
-  geom_point(aes(x=Budget_Size), data=allocations, y=0, pch='x', color='black') + 
-  scale_y_continuous(name="Max Request", limits = c(0,30000), labels = scales::dollar) + 
-  scale_x_continuous(name="Budget", limits = c(1,50000), labels = scales::dollar) +
-  ggtitle("Max Request by Budget (Smaller categories)") + 
-  geom_abline(slope=1, intercept=0, linetype='dashed', alpha=.4)
+ggplot(zzz_long) + aes(x=Budget, y=MaxAward, color=Scenario) + 
+    geom_abline(slope=1, intercept=0, linetype='dashed', alpha=.4) +
+  geom_line() +
+  geom_point(aes(x=BudgetSize), data=allocations, y=0, pch='x', color='black') + 
+  scale_y_continuous(name="Max Request", limits = c(0,20000), labels = scales::dollar) + 
+  scale_x_continuous(name="Budget", limits = c(0,20000), labels = scales::dollar) +
+  ggtitle("Max Request by Budget (Smaller categories)") 
+``` 
 
-```
-
-Scenarios 2,3, and 4 each intersect the current line, which means that within the smallest category, the max request max decrease, but above a certain point
-the max request will increase. This break-even point is between \$7500 and $15000 depending on the scenario. The 100% funding line is overlaid as a dashed line;
-note that there are several organizations in the section where the current plan is greater, meaning that there max request is more than 100% of their budget.
+TODO
 
 ## Comparison by final awards by group
 ```{r all_sec_counterfactual}
-  Current  = Award(allocations$Budget_Size, OGP.2013_forward, allocations$ScorePercent, Year = allocations$Year, beta=NULL)
-  Scenario1= Award(allocations$Budget_Size, OGP.2013_forward, allocations$ScorePercent, Year = allocations$Year, beta=scenario1)
-  Scenario2= Award(allocations$Budget_Size, OGP.2013_forward, allocations$ScorePercent, Year = allocations$Year, beta=scenario2)
-  Scenario3= Award(allocations$Budget_Size, OGP.2013_forward, allocations$ScorePercent, Year = allocations$Year, beta=scenario3)
-  Scenario4= Award(allocations$Budget_Size, OGP.2013_forward, allocations$ScorePercent, Year = allocations$Year, beta=scenario4)
-  
-  all_scenarios <- cbind( allocations[c('Organization', 'Year', 'OGP_Budget_Category', "District_Most_Activity", "Discipline", "Budget_Size")],
-                          Current=Current, 
+
+all_scenarios <- with(scenario.allocations, {
+  Baseline = Award(BudgetSize, OGP.2020_forward, ScorePercent, Year = Year, beta=NULL, TotalBudget = 4.5e6)
+  BudgetIncrease  = Award(BudgetSize, OGP.2020_forward, ScorePercent, Year = Year, beta=NULL, TotalBudget = 4.5e6 + 1.1e6)
+  Scenario1= Award(BudgetSize, OGP.2020_forward, ScorePercent, Year = Year, beta=scenario1.a, TotalBudget = 4.5e6 + 1.1e6, categories = categories)
+  Scenario2= Award(BudgetSize, OGP.2020_forward, ScorePercent, Year = Year, beta=scenario2.a, TotalBudget = 4.5e6 + 1.1e6, categories = categories_infl)
+  Scenario3= Award(BudgetSize, OGP.2020_forward, ScorePercent, Year = Year, beta=scenario3.a, TotalBudget = 4.5e6 + 1.1e6, categories = categories)
+  Scenario4= Award(BudgetSize, OGP.2020_forward, ScorePercent, Year = Year, beta=scenario4.a, TotalBudget = 4.5e6 + 1.1e6, categories = categories_infl)
+  Scenario5= Award(BudgetSize, OGP.2020_forward, ScorePercent, Year = Year, beta=scenario5.a, TotalBudget = 4.5e6 + 1.1e6, categories = scenario5.categories)
+  all_scenarios = cbind( scenario.allocations[c('Organization', 'Year', 'OGPCat', "District", "Discipline", "BudgetSize")],
+                          Baseline = Baseline,
+                          BudgetIncrease=BudgetIncrease, 
                           Scenario1=Scenario1, 
                           Scenario2=Scenario2, 
                           Scenario3=Scenario3, 
-                          Scenario4=Scenario4)
+                          Scenario4=Scenario4,
+                          Scenario5=Scenario5)
+  environment()
+})
   
+list2env(as.list(all_scenarios), environment())
+
 ```
 
 ### Change in funding rate
@@ -348,12 +456,16 @@ We can aggregate the last two years Scored Requests to see how it impacts the fu
 
 ```{r}
 kable(rbind.data.frame(
-  data.frame(Scenario="Current", `Total Scored Request` = sum(Current$Grant100), `Total Final Award`=sum(Current$Final), check.names = FALSE) %>% mutate(p=`Total Final Award` / `Total Scored Request`),
-data.frame(Scenario="Scenario1", `Total Scored Request` = sum(Scenario1$Grant100), `Total Final Award`=sum(Scenario1$Final), check.names = FALSE) %>% mutate(p=`Total Final Award` / `Total Scored Request`),
-data.frame(Scenario="Scenario2", `Total Scored Request` = sum(Scenario2$Grant100), `Total Final Award`=sum(Scenario2$Final), check.names = FALSE) %>% mutate(p=`Total Final Award` / `Total Scored Request`),
-data.frame(Scenario="Scenario3", `Total Scored Request` = sum(Scenario3$Grant100), `Total Final Award`=sum(Scenario3$Final), check.names = FALSE) %>% mutate(p=`Total Final Award` / `Total Scored Request`),
-data.frame(Scenario="Scenario4", `Total Scored Request` = sum(Scenario4$Grant100), `Total Final Award`=sum(Scenario4$Final), check.names = FALSE) %>% mutate(p=`Total Final Award` / `Total Scored Request`)
-) %>%   mutate(p=round(p,3), `Total Final Award` = NULL, `Total Scored Request` = round(`Total Scored Request`, -2)), 
+data.frame(Scenario="Baseline", `Total Scored Request` = sum(Baseline$Grant100), `Total Final Award`=sum(Baseline$Final), check.names = FALSE),
+data.frame(Scenario="BudgetIncrease", `Total Scored Request` = sum(BudgetIncrease$Grant100), `Total Final Award`=sum(BudgetIncrease$Final), check.names = FALSE),
+data.frame(Scenario="Scenario1", `Total Scored Request` = sum(Scenario1$Grant100), `Total Final Award`=sum(Scenario1$Final), check.names = FALSE),
+data.frame(Scenario="Scenario2", `Total Scored Request` = sum(Scenario2$Grant100), `Total Final Award`=sum(Scenario2$Final), check.names = FALSE),
+data.frame(Scenario="Scenario3", `Total Scored Request` = sum(Scenario3$Grant100), `Total Final Award`=sum(Scenario3$Final), check.names = FALSE),
+data.frame(Scenario="Scenario4", `Total Scored Request` = sum(Scenario4$Grant100), `Total Final Award`=sum(Scenario4$Final), check.names = FALSE),
+data.frame(Scenario="Scenario5", `Total Scored Request` = sum(Scenario5$Grant100), `Total Final Award`=sum(Scenario4$Final), check.names = FALSE) 
+
+) %>%   mutate(p=`Total Final Award` / `Total Scored Request`) %>% 
+  mutate(p=round(p,3), `Total Final Award` = NULL, `Total Scored Request` = round(`Total Scored Request`, -2)), 
                format.args=list(big.mark=',')) 
 ```
 
@@ -362,31 +474,48 @@ Additionally, we can look at the projected final awards for each group using his
 same set of group constraints to not deviate from the current by more than 5%, they all look fairly similar. This is still a useful
 check that the software is behaving correctly.
 
+```{r}
+do_summarize <- function(df) {
+  summarize(df,
+    Baseline = sum(Baseline.Final),
+    BudgetIncrease = sum(BudgetIncrease.Final),
+    Scenario1 = sum(Scenario1.Final),
+    Scenario2 = sum(Scenario2.Final),
+    Scenario3 = sum(Scenario3.Final),
+    Scenario4 = sum(Scenario4.Final),
+    Scenario5 = sum(Scenario5.Final),
+  ) 
+} 
+
+do_percent <- function(df) {
+  ungroup(df) %>% 
+  mutate(
+    Baseline = 100* Baseline / sum(Baseline),
+    BudgetIncrease = 100* BudgetIncrease / sum(BudgetIncrease),
+    Scenario1 = 100* Scenario1 / sum(Scenario1),
+    Scenario2 = 100* Scenario2 / sum(Scenario2),
+    Scenario3 = 100* Scenario3 / sum(Scenario3),
+    Scenario4 = 100* Scenario4 / sum(Scenario4),
+    Scenario5 = 100* Scenario5 / sum(Scenario5),
+  )
+
+}
+```
+
+
 
 #### District
 
 ```{r scen_distr}
-d1 <- 
-  all_scenarios %>% group_by(District_Most_Activity) %>% 
-    summarize(Current.Final=sum(Current.Final),
-              Scenario1.Final = sum(Scenario1.Final),
-              Scenario2.Final = sum(Scenario2.Final),
-              Scenario3.Final = sum(Scenario3.Final),
-              Scenario4.Final = sum(Scenario4.Final)
-              ) 
+d1 <- all_scenarios %>% 
+  group_by(District) %>% 
+  do_summarize() 
 
   kable(d1, digits = -2, format.args=list(big.mark=','), caption="Final Award Amounts by District")
 ```
 
 ```{r scen_disc_distr}
-d1 %>% ungroup %>% 
-  mutate(Current.Percent = 100* Current.Final / sum(Current.Final),
-         Scenario1.Percent = 100* Scenario1.Final / sum(Scenario1.Final),
-         Scenario2.Percent = 100* Scenario2.Final / sum(Scenario2.Final),
-         Scenario3.Percent = 100* Scenario3.Final / sum(Scenario3.Final),
-         Scenario4.Percent = 100* Scenario4.Final / sum(Scenario4.Final),
-         Current.Final=NULL,	Scenario1.Final=NULL,	Scenario2.Final=NULL,	Scenario3.Final=NULL,	Scenario4.Final=NULL	
-         ) %>% 
+d1 %>% do_percent() %>% 
     kable(digits = 2, format.args=list(big.mark=','), caption="Final Awards % by District")
 
 ```
@@ -395,26 +524,14 @@ d1 %>% ungroup %>%
 #### Formula Category
 
 ```{r scen_ogp}
-d1 <- all_scenarios %>% group_by(OGP_Budget_Category) %>% 
-    summarize(Current.Final=sum(Current.Final),
-              Scenario1.Final = sum(Scenario1.Final),
-              Scenario2.Final = sum(Scenario2.Final),
-              Scenario3.Final = sum(Scenario3.Final),
-              Scenario4.Final = sum(Scenario4.Final)
-              )  %>% rename(`Formula Category`=OGP_Budget_Category)
+d1 <- all_scenarios %>% group_by(OGPCat) %>% 
+    do_summarize()  %>% rename(`Formula Category`=OGPCat)
 
   kable(d1, digits = -2, format.args=list(big.mark=','), caption="Final Award Amounts by Formula Category")
 ```
 
 ```{r scen_disc_ogp}
-d1 %>% ungroup %>% 
-  mutate(Current.Percent = 100* Current.Final / sum(Current.Final),
-         Scenario1.Percent = 100* Scenario1.Final / sum(Scenario1.Final),
-         Scenario2.Percent = 100* Scenario2.Final / sum(Scenario2.Final),
-         Scenario3.Percent = 100* Scenario3.Final / sum(Scenario3.Final),
-         Scenario4.Percent = 100* Scenario4.Final / sum(Scenario4.Final),
-         Current.Final=NULL,	Scenario1.Final=NULL,	Scenario2.Final=NULL,	Scenario3.Final=NULL,	Scenario4.Final=NULL	
-         ) %>% 
+d1 %>% do_percent %>% 
     kable(digits = 2, format.args=list(big.mark=','), caption="Final Awards % by Formula Category")
 
 ```
@@ -425,25 +542,13 @@ d1 %>% ungroup %>%
 ```{r scen_disc}
 d1 <- 
   all_scenarios %>% group_by(Discipline) %>% 
-    summarize(Current.Final=sum(Current.Final),
-              Scenario1.Final = sum(Scenario1.Final),
-              Scenario2.Final = sum(Scenario2.Final),
-              Scenario3.Final = sum(Scenario3.Final),
-              Scenario4.Final = sum(Scenario4.Final)
-              ) 
+    do_summarize()
 
   kable(d1, digits = -2, format.args=list(big.mark=','), caption="Final Award Amounts by Discipline")
 ```
 
 ```{r scen_disc_perc}
-d1 %>% ungroup %>% 
-  mutate(Current.Percent = 100* Current.Final / sum(Current.Final),
-         Scenario1.Percent = 100* Scenario1.Final / sum(Scenario1.Final),
-         Scenario2.Percent = 100* Scenario2.Final / sum(Scenario2.Final),
-         Scenario3.Percent = 100* Scenario3.Final / sum(Scenario3.Final),
-         Scenario4.Percent = 100* Scenario4.Final / sum(Scenario4.Final),
-         Current.Final=NULL,	Scenario1.Final=NULL,	Scenario2.Final=NULL,	Scenario3.Final=NULL,	Scenario4.Final=NULL	
-         ) %>% 
+d1 %>% do_percent() %>% 
     kable(digits = 2, format.args=list(big.mark=','), caption="Final Awards % by Discipline")
 
 ```
@@ -454,35 +559,53 @@ For each scenario, we can find the 20 organizations that had the largest absolut
 there was an organization that was largest in both absolute *and* percent change. Generally speaking the largest organizations have the absolute
 changes while the small ones have the largest percent changes.
 
+
 ```{r}
-all_scenarios %>% mutate(Scenario=Scenario1.Final, delta=Scenario - Current.Final, percentChange= 100*(Scenario /Current.Final - 1)) %>% 
-  arrange(-Budget_Size) %>% filter(rank(-abs(percentChange))< 20 | rank(-abs(delta))< 20 ) %>% 
- select(Organization, Budget_Size, Current.Final, Scenario, delta, percentChange) %>% 
+all_scenarios %>% mutate(Scenario=BudgetIncrease.Final, delta=Scenario - Baseline.Final, percentChange= 100*(Scenario /Current.Final - 1)) %>% 
+  arrange(-BudgetSize) %>% filter(rank(-abs(percentChange))< 20 | rank(-abs(delta))< 20 ) %>% 
+  select(Organization, BudgetSize, Baseline.Final, Scenario, delta, percentChange) %>% 
+  kable(digits = 2, format.args=list(big.mark=','), caption="Largest Changes in Final Awards, Budget Increase")
+
+```
+
+
+```{r}
+all_scenarios %>% mutate(Scenario=Scenario1.Final, delta=Scenario - Baseline.Final, percentChange= 100*(Scenario /Current.Final - 1)) %>% 
+  arrange(-BudgetSize) %>% filter(rank(-abs(percentChange))< 20 | rank(-abs(delta))< 20 ) %>% 
+  select(Organization, BudgetSize, Baseline.Final, Scenario, delta, percentChange) %>% 
   kable(digits = 2, format.args=list(big.mark=','), caption="Largest Changes in Final Awards, Scenario1")
 
 ```
   
 ```{r}
-all_scenarios %>% mutate(Scenario=Scenario2.Final, delta=Scenario - Current.Final, percentChange= 100*(Scenario /Current.Final - 1)) %>% 
-  arrange(-Budget_Size) %>% filter(rank(-abs(percentChange))< 20 | rank(-abs(delta))< 20 ) %>% 
- select(Organization, Budget_Size, Current.Final, Scenario, delta, percentChange) %>% 
+all_scenarios %>% mutate(Scenario=Scenario2.Final, delta=Scenario - Baseline.Final, percentChange= 100*(Scenario /Current.Final - 1)) %>% 
+  arrange(-BudgetSize) %>% filter(rank(-abs(percentChange))< 20 | rank(-abs(delta))< 20 ) %>% 
+  select(Organization, BudgetSize, Baseline.Final, Scenario, delta, percentChange) %>% 
   kable(digits = 2, format.args=list(big.mark=','), caption="Largest Changes, Scenario2")
 
 ```  
 
 ```{r}
-all_scenarios %>% mutate(Scenario=Scenario3.Final, delta=Scenario - Current.Final, percentChange= 100*(Scenario /Current.Final - 1)) %>% 
-  arrange(-Budget_Size) %>% filter(rank(-abs(percentChange))< 20 | rank(-abs(delta))< 20 ) %>% 
- select(Organization, Budget_Size, Current.Final, Scenario, delta, percentChange) %>% 
+all_scenarios %>% mutate(Scenario=Scenario3.Final, delta=Scenario - Baseline.Final, percentChange= 100*(Scenario /Current.Final - 1)) %>% 
+  arrange(-BudgetSize) %>% filter(rank(-abs(percentChange))< 20 | rank(-abs(delta))< 20 ) %>% 
+  select(Organization, BudgetSize, Baseline.Final, Scenario, delta, percentChange) %>% 
   kable(digits = 2, format.args=list(big.mark=','), caption="Largest Changes, Scenario3")
 
 ```
 
 ```{r}
-all_scenarios %>% mutate(Scenario=Scenario4.Final, delta=Scenario - Current.Final, percentChange= 100*(Scenario /Current.Final - 1)) %>% 
-  arrange(-Budget_Size) %>% filter(rank(-abs(percentChange))< 20 | rank(-abs(delta))< 20 ) %>% 
- select(Organization, Budget_Size, Current.Final, Scenario, delta, percentChange) %>% 
+all_scenarios %>% mutate(Scenario=Scenario4.Final, delta=Scenario - Baseline.Final, percentChange= 100*(Scenario /Current.Final - 1)) %>% 
+  arrange(-BudgetSize) %>% filter(rank(-abs(percentChange))< 20 | rank(-abs(delta))< 20 ) %>% 
+  select(Organization, BudgetSize, Baseline.Final, Scenario, delta, percentChange) %>% 
   kable(digits = 2, format.args=list(big.mark=','), caption="Largest Changes, Scenario4")
+
+```
+
+```{r}
+all_scenarios %>% mutate(Scenario=Scenario5.Final, delta=Scenario - Baseline.Final, percentChange= 100*(Scenario /Current.Final - 1)) %>% 
+  arrange(-BudgetSize) %>% filter(rank(-abs(percentChange))< 20 | rank(-abs(delta))< 20 ) %>% 
+  select(Organization, BudgetSize, Baseline.Final, Scenario, delta, percentChange) %>% 
+  kable(digits = 2, format.args=list(big.mark=','), caption="Largest Changes, Scenario5")
 
 ```
 
@@ -495,13 +618,13 @@ all_scenarios %>% mutate(Scenario=Scenario4.Final, delta=Scenario - Current.Fina
 
 #### Total changes
 
-We can also aggregate the changes in final reward by whether it increased or not, and by how much:
+We can also aggregate the changes in final reward by whether it increased or not (vs expected Budget Increase), and by how much:
 
 
 ```{r deltatbl}
-zzz <- all_scenarios[c('Scenario1.Final','Scenario2.Final','Scenario3.Final','Scenario4.Final')] - all_scenarios$Current.Final
+zzz <- all_scenarios[c('Scenario1.Final','Scenario2.Final','Scenario3.Final','Scenario4.Final', 'Scenario5.Final')] - all_scenarios$BudgetIncrease.Final
 
-zzz <- data.frame(Organization=all_scenarios$Organization, OGP_Budget_Category=all_scenarios$OGP_Budget_Category, zzz)
+zzz <- data.frame(Organization=all_scenarios$Organization, OGP_Budget_Category=all_scenarios$OGPCat, zzz)
 
 
 melt(zzz, c("Organization", "OGP_Budget_Category")) %>% 
@@ -521,12 +644,15 @@ melt(zzz, c("Organization", "OGP_Budget_Category")) %>%
            delta=ifelse(sign(value) > 0, '\\+', '\\-')
            ) %>% 
   summarise(n=n(), avg=mean(value), min=min(value), med=median(value), max=max(value)) %>% 
+  arrange(Scenario, `Formula Group`) %>% 
     kable( digits=0, caption="Types / Sizes of Changes by Formula Group",align='lccrrrrr') %>% 
-    row_spec(c(6:11, 18:23), background="lightgrey")
+    row_spec(c(6:12, 19:25), background="lightgrey")
 
 ```
   
 ### Final Comments and Caveats
+
+TODO
 
 * All of the above scenarios can mixed - if it were desired to split the difference between Scenario 1 and 3, for example,
     their coefficients can be averaged; this would still satisfy all the group constraints previously described.
@@ -547,22 +673,29 @@ melt(zzz, c("Organization", "OGP_Budget_Category")) %>%
         will help. The extra dollar award per point on the review phase is at least 5% higher under all scenarios.
 
 
-# Integration with website
+# Appendix A: Integration with website
 
+TODO
 
-The original JavaScript module is found at 
+The original JavaScript module was found at 
 
 https://www.lacountyarts.org/sites/all/modules/custom/lacac_calc_button/js/lacac_calc_button.js?pzw4vt
 
-and contains more precision on the slopes than is listed on the OGP website. It is used on the website calculator widget:
+and contains more precision on the slopes than is listed on the OGP website. Since 2020, that was updated to
 
-https://www.lacountyarts.org/funding/organizational-grant-program/ogp-grantseekers/apply/ogp-grantseekers-calculator-explained
+https://www.lacountyarts.org/sites/default/files/js/js_pa6EhFUALtJQlWo5Qj-7Gs4y5d9vTSerRl4vDyFWoVE.js line 7800
+
+which I suspect is a build artifact from a JS bundler or similar.
+
+It is used on the website calculator widget:
+
+https://www.lacountyarts.org/funding/organizational-grant-program/ogp-grantseekers/ogp-grantseekers-apply
 
 When an appropriate plan is chosen, it will be straightforward to update the slopes in that module.
 
 ## Scenario 1 Website collateral
 ```{r comment=NA}
-s1s <- solveForBrackets(scenario1)
+s1s <- solveForBrackets(scenario1.a)
 cat(to_code(s1s))
 ```
 
@@ -572,7 +705,7 @@ cat(to_text(s1s))
 
 ## Scenario 2 Website collateral
 ```{r comment=NA}
-s2s <- solveForBrackets(scenario1)
+s2s <- solveForBrackets(scenario2.a)
 cat(to_code(s2s))
 ```
 
@@ -584,7 +717,7 @@ cat(to_text(s2s))
 
 ## Scenario 3 Website collateral
 ```{r comment=NA}
-s3s <- solveForBrackets(scenario1)
+s3s <- solveForBrackets(scenario3.a)
 cat(to_code(s3s))
 ```
 
@@ -595,7 +728,7 @@ cat(to_text(s3s))
 
 ## Scenario 4 Website collateral
 ```{r comment=NA}
-s4s <- solveForBrackets(scenario1)
+s4s <- solveForBrackets(scenario4.a)
 cat(to_code(s4s))
 ```
 
@@ -603,8 +736,18 @@ cat(to_code(s4s))
 cat(to_text(s4s))
 ```
 
+## Scenario 5 Website collateral
+```{r comment=NA}
+s5s <- solveForBrackets(scenario5.a)
+cat(to_code(s5s))
+```
 
-# Appendix A: R Package Notes
+```{r comment=NA}
+cat(to_text(s5s))
+```
+
+
+# Appendix B: R Package Notes
 
 ### Installation
 
