@@ -130,6 +130,8 @@ local({
 
   allocations2324 <- allocations2324[, c("Organization", "BudgetSize", "ScorePercent", "Objective")]
 
+  # Fix: not filled in sheet.
+  allocations2324[allocations2324$Organization %in% "Academy Foundation", "Objective"] <- "Accessibility"
 
 
   message("2324 pdf")
@@ -147,7 +149,7 @@ local({
 
   pg2324 <- with(pg2324, data.frame(Organization=`Grantee Name`, Year='2324', City=City, Discipline=Discipline, District=`District of Most\rProgramming:`, OGPCat=paste("OGP", `OGP Budget\rCategory`)))
 
-  ## Was left off website per Ros email 12/23/24
+  ## Fix: Was left off website per Ros email 12/23/24
   pg2324 <- rbind(
     pg2324,
     data.frame(Organization='Wallis Annenberg Center for the Performing Arts', Year='2324', City='Beverly Hills', Discipline='Multidisciplinary - Performing Arts', District=3, OGPCat="OGP 3")
