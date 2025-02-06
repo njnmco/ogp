@@ -108,14 +108,21 @@ OGP.2020_forward <- function(B, beta=NULL, categories=NULL) {
   drop(basis(B, categories = categories) %*% beta)
 }
 
-
+### Main Award calc ####
 Award <- function(Budget, Grant100Formula, Scores, TotalBudget=4500000, Year=1, beta=NULL, categories=NULL, ...) {
+
+  if(length(TotalBudget) == 1) {
+    uy <- unique(Year)
+    TotalBudget <- setNames(rep(TotalBudget, length(uy)), uy)
+  }
 
   Grant100 <- Grant100Formula(Budget, beta=beta, categories=categories)
   Awards   <-  Grant100 * Scores
-  mod      <- TotalBudget / ave(Awards, Year, FUN=sum)
+  mod      <- tapply(Awards, Year, sum)
 
-  Final <- Awards * mod
+  mod <- TotalBudget[names(mod)] / mod
+
+  Final <- Awards * mod[Year]
 
   structure(data.frame(..., Grant100, Awards, Final), mod=mod)
 }
@@ -141,7 +148,7 @@ scenario <- function(data,
                        B = data$Budget_Size,
                        Y = data$Current.Final,
                        Y_low = .95 * data$Current.Grant100,
-                       groups_const = c("City", "District", "Discipline", "OGPCat"),
+                       groups_const = c("City", "District", "Discipline", "OGPCat", "Objective"),
                        mod=NULL, verbose=FALSE, niter=100
                      ) {
 
