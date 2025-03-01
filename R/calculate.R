@@ -111,6 +111,7 @@ OGP.2020_forward <- function(B, beta=NULL, categories=NULL) {
 ### Main Award calc ####
 Award <- function(Budget, Grant100Formula, Scores, TotalBudget=4500000, Year=1, beta=NULL, categories=NULL, ...) {
 
+  # TotalBudget should either be year:chr or, if scalar will be elongated
   if(length(TotalBudget) == 1) {
     uy <- unique(Year)
     TotalBudget <- setNames(rep(TotalBudget, length(uy)), uy)
