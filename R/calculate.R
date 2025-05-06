@@ -325,7 +325,7 @@ solveForBrackets <- function(scenario, categories=NULL) {
   i <- 1
   for(ts in to_solve) {
     ret[i, 1]   <- ts
-    ret[i, 2:3] <- solve(cbind(c(1,1), ts+c(0,10)), OGP.2013_forward(ts + c(0,10), beta = scenario))
+    ret[i, 2:3] <- solve(cbind(c(1,1), ts+c(0,10)), OGP.2020_forward(ts + c(0,10), beta = scenario, categories=categories))
 
     i <- i +1
   }

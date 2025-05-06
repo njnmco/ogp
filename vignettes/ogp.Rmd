@@ -1,7 +1,7 @@
 ---
-title: "OGP 2024 Analysis Draft 4"
+title: "OGP 2024 Analysis Draft 5"
 author: "Neal Fultz <<neal@njnm.co>>"
-date: "2/28/2025"
+date: "5/05/2025"
 output: html_vignette
 vignette: >
   %\VignetteIndexEntry{OGP 2024 Analysis}
@@ -811,7 +811,7 @@ When an appropriate plan is chosen, it will be straightforward to update the slo
 
 ## Scenario 1 Website collateral
 ```{r comment=NA}
-s1s <- solveForBrackets(scenario1.a)
+s1s <- solveForBrackets(scenario1.a, categories |> pmax(1))
 cat(to_code(s1s))
 ```
 
@@ -821,7 +821,7 @@ cat(to_text(s1s))
 
 ## Scenario 2 Website collateral
 ```{r comment=NA}
-s2s <- solveForBrackets(scenario2.a)
+s2s <- solveForBrackets(scenario2.a, categories = categories_infl|> pmax(1))
 cat(to_code(s2s))
 ```
 
@@ -833,7 +833,7 @@ cat(to_text(s2s))
 
 ## Scenario 3 Website collateral
 ```{r comment=NA}
-s3s <- solveForBrackets(scenario3.a)
+s3s <- solveForBrackets(scenario3.a,  categories |> pmax(1))
 cat(to_code(s3s))
 ```
 
@@ -844,7 +844,7 @@ cat(to_text(s3s))
 
 ## Scenario 4 Website collateral
 ```{r comment=NA}
-s4s <- solveForBrackets(scenario4.a)
+s4s <- solveForBrackets(scenario4.a, categories = categories_infl |> pmax(1))
 cat(to_code(s4s))
 ```
 
@@ -854,7 +854,7 @@ cat(to_text(s4s))
 
 ## Scenario 5 Website collateral
 ```{r comment=NA}
-s5s <- solveForBrackets(scenario5.a)
+s5s <- solveForBrackets(scenario5.a, scenario5.categories |> pmax(1))
 cat(to_code(s5s))
 ```
 
@@ -868,7 +868,7 @@ Same code as Scenario 1
 
 ## Scenario 9 Website collateral
 ```{r comment=NA}
-s9s <- solveForBrackets(scenario9.a)
+s9s <- solveForBrackets(scenario9.a, scenario9.categories |> pmax(1))
 cat(to_code(s9s))
 ```
 
@@ -878,7 +878,7 @@ cat(to_text(s9s))
 
 ## Scenario 10 Website collateral
 ```{r comment=NA}
-s10s <- solveForBrackets(scenario10.a)
+s10s <- solveForBrackets(scenario10.a, scenario9.categories|> pmax(1))
 cat(to_code(s10s))
 ```
 
