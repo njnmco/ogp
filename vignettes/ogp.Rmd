@@ -1,7 +1,7 @@
 ---
-title: "OGP 2024 Analysis Draft 5"
+title: "OGP 2024 Analysis Draft 7"
 author: "Neal Fultz <<neal@njnm.co>>"
-date: "5/05/2025"
+date: "5/14/2025"
 output: html_vignette
 vignette: >
   %\VignetteIndexEntry{OGP 2024 Analysis}
@@ -43,7 +43,7 @@ several initial scenarios to determine which is best to move forward with:
 * Scenario 1: recalibrate
 * Scenario 2: increase brackets by inflation + recalibrate
 * Scenario 3: increase rates by inflation + recalibrate
-* Scenario 4: Increase brackets and rates by inflation + recalibrate
+* Scenario 4: Increase brackets and rates by inflation + reduce Max Award to \$40M => \$237k  + recalibrate, 
 * Scenario 5: Drop OGP3 bracket + recalibrate
 * ~~Scenario 6: recalibrate + 3% cut~~
 * ~~Scenario 7: recalibrate + 5% cut~~
@@ -226,6 +226,14 @@ final awards.
 
 ```{r scenarios, results='hide'}
 
+adjustFinalCategoryToConstraint <- function(scen, limit, x0, cats) {
+  loss <- function(x) abs(limit - OGP.2020_forward(x0, 
+        scen - c(0,0,0, x[1],x[2]), categories = cats))
+  x <- optim(c(0, scen[5]), loss, upper = scen[4:5], method = 'L-BFGS-B')$par
+  scen - c(0,0,0, x)
+}
+
+
 ####
 # * Increase Budget +$1.1m + recalibrate
 # * Increase Budget +$1.1m + increase brackets by inflation + recalibrate
@@ -334,6 +342,11 @@ scenario4.a <-c(1, 0.3633, 0.0355, 0.0039, 2e-04) * c(1, 1, 1, 1, 0)
 
 cbind(categories_infl, scenario4.a, basis(categories_infl, categories_infl) %*% scenario4.a, OGP.2020(categories_infl))
 
+scenario4.a <- adjustFinalCategoryToConstraint(scenario4.a, 237000, 40e6, categories_infl)
+scenario4.a <- c(1, 0.3633, 0.0355, 0.00337, 0)
+
+scenario4.cat <- c(0, 9000, 119000, 1788000, 40000000)
+
 #scenario 5 / Combine OGP3 and 4
 
 scenario5.categories <-   c(0, 17500, 100000, 1500000, 50e6)
@@ -355,12 +368,6 @@ cbind(scenario5.categories, scenario5.a, basis(scenario5.categories, scenario5.c
 # Scenario 9 - Clip at 15M budget => 200k req
 
 
-adjustFinalCategoryToConstraint <- function(scen, limit, x0, cats) {
-  loss <- function(x) abs(limit - OGP.2020_forward(x0, 
-        scen - c(0,0,0, x[1],x[2]), categories = cats))
-  x <- optim(c(0, scen[5]), loss, upper = scen[4:5], method = 'L-BFGS-B')$par
-  scen - c(0,0,0, x)
-}
 
 
 scenario9.categories <-   c(0, 7500, 100000, 1500000, 15000000)
@@ -454,7 +461,7 @@ kable(cbind(
   Scenario1= OGP.2020_forward(b, scenario1.a, categories),
   Scenario2= OGP.2020_forward(b, scenario2.a, categories_infl),
   Scenario3= OGP.2020_forward(b, scenario3.a, categories),
-  Scenario4= OGP.2020_forward(b, scenario4.a, categories_infl),
+  Scenario4= OGP.2020_forward(b, scenario4.a, scenario4.cat),
   Scenario5= OGP.2020_forward(b, scenario5.a, scenario5.categories),
   Scenario9= OGP.2020_forward(b, scenario9.a, scenario9.categories),
   Scenario10= OGP.2020_forward(b, scenario10.a, scenario9.categories)
@@ -471,7 +478,7 @@ zzz <- data.frame(Budget=b,
   Scenario1= OGP.2020_forward(b, scenario1.a, categories),
   Scenario2= OGP.2020_forward(b, scenario2.a, categories_infl),
   Scenario3= OGP.2020_forward(b, scenario3.a, categories),
-  Scenario4= OGP.2020_forward(b, scenario4.a, categories_infl),
+  Scenario4= OGP.2020_forward(b, scenario4.a, scenario4.cat),
   Scenario5= OGP.2020_forward(b, scenario5.a, scenario5.categories),
   Scenario9= OGP.2020_forward(b, scenario9.a, scenario9.categories),
   Scenario10= OGP.2020_forward(b, scenario10.a, scenario9.categories)
@@ -512,7 +519,7 @@ all_scenarios <- with(scenario.allocations, {
   Scenario1= Award(BudgetSize, OGP.2020_forward, ScorePercent, Year = Year, beta=scenario1.a, TotalBudget = 4.5e6 + 1.1e6, categories = categories)
   Scenario2= Award(BudgetSize, OGP.2020_forward, ScorePercent, Year = Year, beta=scenario2.a, TotalBudget = 4.5e6 + 1.1e6, categories = categories_infl)
   Scenario3= Award(BudgetSize, OGP.2020_forward, ScorePercent, Year = Year, beta=scenario3.a, TotalBudget = 4.5e6 + 1.1e6, categories = categories)
-  Scenario4= Award(BudgetSize, OGP.2020_forward, ScorePercent, Year = Year, beta=scenario4.a, TotalBudget = 4.5e6 + 1.1e6, categories = categories_infl)
+  Scenario4= Award(BudgetSize, OGP.2020_forward, ScorePercent, Year = Year, beta=scenario4.a, TotalBudget = 4.5e6 + 1.1e6, categories = scenario4.cat)
   Scenario5= Award(BudgetSize, OGP.2020_forward, ScorePercent, Year = Year, beta=scenario5.a, TotalBudget = 4.5e6 + 1.1e6, categories = scenario5.categories)
   #Scenario6= Award(BudgetSize, OGP.2020_forward, ScorePercent, Year = Year, beta=scenario1.a, TotalBudget = .97*(4.5e6 + 1.1e6), categories = categories)
   #Scenario7= Award(BudgetSize, OGP.2020_forward, ScorePercent, Year = Year, beta=scenario1.a, TotalBudget = .95*(4.5e6 + 1.1e6), categories = categories)
@@ -844,7 +851,7 @@ cat(to_text(s3s))
 
 ## Scenario 4 Website collateral
 ```{r comment=NA}
-s4s <- solveForBrackets(scenario4.a, categories = categories_infl |> pmax(1))
+s4s <- solveForBrackets(scenario4.a, categories = scenario4.cat |> pmax(1))
 cat(to_code(s4s))
 ```
 
@@ -956,7 +963,7 @@ perc_change_plot(categories, scenario3.a) +
 
 ```{r, echo=FALSE, fig.width=8, fig.height=5}
 data.frame(Budget=scenario.allocations$BudgetSize, PercentChange=Scenario4$Final / Current$Final) %>% 
-perc_change_plot(categories_infl, scenario4.a) + 
+perc_change_plot(scenario4.cat, scenario4.a) + 
   ggtitle("Scenario 4 Percent Change - Final Awards")
 ```
 
@@ -1048,6 +1055,105 @@ ggplot(zzz_long) + aes(x=Budget, y=MaxAward, color=Scenario) +
   ggtitle("Max Request by Budget (Smaller categories)") 
 ``` 
 
+# Appendix F
 
+## Current
+
+## Scenario 2
+
+
+```{r}
+cuts <- c(0, 200000, 1000000, 15000000, 999999999)
+
+
+ptsl <-  OGP.2020_forward(cuts[-5])
+ptsr <-  OGP.2020_forward(cuts[-1]-1)
+
+
+
+kable(data.frame(
+  "Budget Category" = c("OGP I", "OGP II", "OGP III", "OGP IV"),
+  "Budget Size" = sprintf("%s - %s", scales::label_currency()(cuts[-5]), 
+                                     scales::label_currency()(cuts[-1] - 1)) |> sub(pattern="- $999,999,998", replacement="+"),
+  "Smallest Max Request" = scales::label_currency()(ptsl),
+  "Largest Max Request" = scales::label_currency()(ptsr),
+  check.names=FALSE
+
+))
+```
+
+
+## Scenario 2
+
+
+```{r}
+cuts <- c(0, 200000, 1000000, 15000000, 999999999)
+
+
+ptsl <-  OGP.2020_forward(cuts[-5], scenario2.a, categories_infl)
+ptsr <-  OGP.2020_forward(cuts[-1]-1, scenario2.a, categories_infl)
+
+
+
+kable(data.frame(
+  "Budget Category" = c("OGP I", "OGP II", "OGP III", "OGP IV"),
+  "Budget Size" = sprintf("%s - %s", scales::label_currency()(cuts[-5]), 
+                                     scales::label_currency()(cuts[-1] - 1)) |> sub(pattern="- $999,999,998", replacement="+"),
+  "Smallest Max Request" = scales::label_currency()(ptsl),
+  "Largest Max Request" = scales::label_currency()(ptsr),
+  check.names=FALSE
+
+))
+```
+
+
+
+
+## Scenario 4(modified)
+
+
+```{r}
+cuts <- c(0, 200000, 1000000, 15000000, 999999999)
+
+
+ptsl <-  OGP.2020_forward(cuts[-5], scenario4.a, scenario4.cat)
+ptsr <-  OGP.2020_forward(cuts[-1]-1, scenario4.a, scenario4.cat)
+
+
+
+kable(data.frame(
+  "Budget Category" = c("OGP I", "OGP II", "OGP III", "OGP IV"),
+  "Budget Size" = sprintf("%s - %s", scales::label_currency()(cuts[-5]), 
+                                     scales::label_currency()(cuts[-1] - 1)) |> sub(pattern="- $999,999,998", replacement="+"),
+  "Smallest Max Request" = scales::label_currency()(ptsl),
+  "Largest Max Request" = scales::label_currency()(ptsr),
+  check.names=FALSE
+
+))
+```
+
+
+## Scenario 9
+
+
+```{r}
+cuts <- c(0, 200000, 1000000, 15000000, 999999999)
+
+
+ptsl <-  OGP.2020_forward(cuts[-5], scenario9.a, scenario9.categories)
+ptsr <-  OGP.2020_forward(cuts[-1]-1, scenario9.a, scenario9.categories)
+
+
+
+kable(data.frame(
+  "Budget Category" = c("OGP I", "OGP II", "OGP III", "OGP IV"),
+  "Budget Size" = sprintf("%s - %s", scales::label_currency()(cuts[-5]), 
+                                     scales::label_currency()(cuts[-1] - 1)) |> sub(pattern="- $999,999,998", replacement="+"),
+  "Smallest Max Request" = scales::label_currency()(ptsl),
+  "Largest Max Request" = scales::label_currency()(ptsr),
+  check.names=FALSE
+
+))
+```
 
 
